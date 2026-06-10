@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesouro Direto | Carteira</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-elements">
+        <div class="blur-blob blob-1"></div>
+        <div class="blur-blob blob-2"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#paint0_linear)"/>
+                    <path d="M2 17L12 22L22 17" stroke="url(#paint1_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="url(#paint2_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="12" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#38BDF8"/>
+                            <stop offset="1" stop-color="#3B82F6"/>
+                        </linearGradient>
+                        <linearGradient id="paint1_linear" x1="12" y1="17" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#818CF8"/>
+                            <stop offset="1" stop-color="#6366F1"/>
+                        </linearGradient>
+                        <linearGradient id="paint2_linear" x1="12" y1="12" x2="12" y2="17" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#A78BFA"/>
+                            <stop offset="1" stop-color="#8B5CF6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Minha Carteira Tesouro</h1>
+            </div>
+            <div class="header-actions">
+                <button id="btn-update-market" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    Atualizar Mercado
+                </button>
+                <button id="btn-new-investment" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    Novo Aporte
+                </button>
+            </div>
+        </header>
+
+        <section class="dashboard">
+            <div class="card metric-card">
+                <h3>Total Investido</h3>
+                <p id="total-investido" class="metric-value">R$ 0,00</p>
+            </div>
+            <div class="card metric-card">
+                <h3>Saldo Bruto Atual</h3>
+                <p id="saldo-bruto" class="metric-value highlight">R$ 0,00</p>
+                <span class="badge badge-info">Marcação a Mercado</span>
+            </div>
+            <div class="card metric-card">
+                <h3>Rentabilidade</h3>
+                <p id="rentabilidade-valor" class="metric-value success">R$ +0,00</p>
+                <span id="rentabilidade-percent" class="badge badge-success">+0.00%</span>
+            </div>
+        </section>
+
+        <section class="portfolio">
+            <div id="title-summary-cards" class="summary-cards-container">
+                <!-- Preenchido via JS -->
+            </div>
+            <div class="card table-card">
+                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <h2>Meus Títulos</h2>
+                    <div class="filter-group">
+                        <select id="titulo-filter" class="form-select" style="padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: white; font-family: var(--font-family); outline: none;">
+                            <option value="Todos">Todos os Títulos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="portfolio-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="titulo">Título</th>
+                                <th data-sort="dataAplicacao">Data Aplicação</th>
+                                <th data-sort="quantidade">Quantidade</th>
+                                <th data-sort="precoUnitario">Preço Compra</th>
+                                <th data-sort="investidoCalc">Valor Investido</th>
+                                <th data-sort="taxaContratada">Taxa Contratada</th>
+                                <th data-sort="precoMercado">Preço Mercado</th>
+                                <th data-sort="valorAtual">Valor Atual</th>
+                                <th data-sort="rentabilidadeRS">Rentab. (R$)</th>
+                                <th data-sort="rentabilidadePct">Rentab. (%)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal Novo Aporte -->
+    <div id="modal-new" class="modal">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h2 id="modal-new-title">Cadastrar Novo Aporte</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-new-investment">
+                    <div class="form-group">
+                        <label for="titulo">Título</label>
+                        <input type="text" id="titulo" required placeholder="Ex: Tesouro Prefixado 2029" list="titulos-list" autocomplete="off">
+                        <datalist id="titulos-list">
+                            <!-- Preenchido via JS -->
+                        </datalist>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dataAplicacao">Data da Aplicação</label>
+                            <input type="text" id="dataAplicacao" required placeholder="DD/MM/AAAA" maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="taxaContratada">Taxa Contratada</label>
+                            <input type="text" id="taxaContratada" required placeholder="Ex: 11,45% ou IPCA + 6,01%">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade</label>
+                            <input type="number" id="quantidade" step="0.01" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="precoUnitario">Preço Unitário (R$)</label>
+                            <input type="number" id="precoUnitario" step="0.01" required placeholder="0.00">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Salvar Aporte</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Atualizar Mercado -->
+    <div id="modal-market" class="modal">
+        <div class="modal-content card modal-lg">
+            <div class="modal-header">
+                <h2>Atualizar Preços de Mercado</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" style="margin-bottom: 20px;">
+                    Informe o Preço Unitário atual dos títulos para calcular a marcação a mercado. 
+                    Você pode preencher manualmente ou fazer upload da planilha de resgate do Tesouro.
+                </p>
+                <div style="margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--card-border);">
+                    <label for="upload-excel" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Automático: Importar Planilha do Tesouro (Excel)</label>
+                    <input type="file" id="upload-excel" accept=".xlsx, .xls, .csv" style="border: none; padding: 0; background: transparent;">
+                    <small class="text-muted" style="display: block; margin-top: 8px;">Faz a leitura das colunas "Título" e "Preço unitário de resgate".</small>
+                </div>
+                <form id="form-update-market">
+                    <h3 style="margin-bottom: 16px; font-size: 1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">Preenchimento Manual / Conferência</h3>
+                    <div id="market-prices-container">
+                        <!-- Inputs gerados via JS -->
+                    </div>
+                    <div style="margin-top: 24px;">
+                        <button type="submit" class="btn btn-primary btn-block">Atualizar e Calcular</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SheetJS CDN para ler Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
