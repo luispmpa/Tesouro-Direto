@@ -984,6 +984,70 @@ function savePrices() {
     localStorage.setItem('tesouro_market_prices', JSON.stringify(marketPrices));
 }
 
+// --- Integração com a API oficial do Tesouro Direto ---
+const TESOURO_API_URL = 'https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json';
+
+// Proxies de CORS usados como fallback caso a chamada direta seja bloqueada pelo navegador.
+const TESOURO_FETCH_STRATEGIES = [
+    url => url,
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+];
+
+// Normaliza o nome do título para comparação (sem acentos, caixa baixa, espaços colapsados).
+function normalizeTituloKey(nome) {
+    return (nome || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// Busca os preços unitários de resgate (PU de venda) na API do Tesouro.
+// Retorna um objeto { chaveNormalizada: preco }.
+async function fetchTesouroMarketPrices() {
+    let lastError;
+    for (const wrap of TESOURO_FETCH_STRATEGIES) {
+        try {
+            const resp = await fetch(wrap(TESOURO_API_URL), {
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const list = (data && data.response && data.response.TrsrBdTradgList) || [];
+            if (!list.length) throw new Error('Lista de títulos vazia');
+
+            const prices = {};
+            list.forEach(entry => {
+                const bd = (entry && entry.TrsrBd) || {};
+                const nome = bd.nm;
+                // untrRedVal = preço unitário de resgate (venda); fallback para investimento.
+                const preco = Number(bd.untrRedVal != null ? bd.untrRedVal : bd.untrInvstmtVal);
+                if (nome && Number.isFinite(preco) && preco > 0) {
+                    prices[normalizeTituloKey(nome)] = preco;
+                }
+            });
+            if (!Object.keys(prices).length) throw new Error('Nenhum preço válido retornado');
+            return prices;
+        } catch (err) {
+            lastError = err;
+        }
+    }
+    throw lastError || new Error('Falha ao consultar a API do Tesouro');
+}
+
+// Localiza o preço de um título no mapa retornado pela API, tolerando pequenas variações de nome.
+function lookupMarketPrice(prices, titulo) {
+    const key = normalizeTituloKey(titulo);
+    if (prices[key] != null) return prices[key];
+    // Tentativa flexível: casa por prefixo/contém quando o nome não bate exatamente.
+    const found = Object.keys(prices).find(k => k === key || k.includes(key) || key.includes(k));
+    return found ? prices[found] : NaN;
+}
+
 // Cálculos Principais
 function getCalculatedData() {
     let totalInvestido = 0;
@@ -1327,6 +1391,51 @@ function setupModals() {
         
         modalMarket.classList.add('active');
     });
+
+    // Busca automática de preços de mercado na API oficial do Tesouro Direto
+    const btnFetchMarket = document.getElementById('btn-fetch-market');
+    if (btnFetchMarket) {
+        btnFetchMarket.addEventListener('click', async () => {
+            const label = document.getElementById('btn-fetch-market-label');
+            const original = label ? label.textContent : '';
+            btnFetchMarket.disabled = true;
+            if (label) label.textContent = '⏳ Buscando...';
+            try {
+                const prices = await fetchTesouroMarketPrices();
+                const inputs = document.querySelectorAll('.market-price-input');
+                let matched = 0;
+                let missing = [];
+                inputs.forEach(input => {
+                    const titulo = input.getAttribute('data-titulo');
+                    const preco = lookupMarketPrice(prices, titulo);
+                    if (Number.isFinite(preco) && preco > 0) {
+                        input.value = preco.toFixed(2);
+                        input.style.borderColor = 'var(--success-color)';
+                        input.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+                        matched++;
+                    } else {
+                        input.style.borderColor = 'var(--danger-color)';
+                        missing.push(titulo);
+                    }
+                });
+                if (matched > 0) {
+                    let msg = `${matched} preço(s) atualizado(s) pela API do Tesouro. Confira e clique em Atualizar.`;
+                    if (missing.length) {
+                        msg += ` ${missing.length} título(s) não localizado(s) (provavelmente fora de negociação): preencha manualmente.`;
+                    }
+                    showToast(msg, missing.length ? 'info' : 'success', 6000);
+                } else {
+                    showToast('Nenhum título da carteira foi encontrado na API. Verifique os nomes ou preencha manualmente.', 'error', 6000);
+                }
+            } catch (err) {
+                console.error('Erro ao buscar preços do Tesouro:', err);
+                showToast('Não foi possível buscar os preços online (rede/CORS). Use a planilha ou o preenchimento manual.', 'error', 6000);
+            } finally {
+                btnFetchMarket.disabled = false;
+                if (label) label.textContent = original;
+            }
+        });
+    }
 
     const uploadExcel = document.getElementById('upload-excel');
     if (uploadExcel) {

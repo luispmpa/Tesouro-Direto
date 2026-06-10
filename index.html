@@ -182,8 +182,15 @@
                     Informe o Preço Unitário atual dos títulos para calcular a marcação a mercado. 
                     Você pode preencher manualmente ou fazer upload da planilha de resgate do Tesouro.
                 </p>
+                <div style="margin-bottom: 16px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--primary-color);">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Online: Buscar preços na API oficial do Tesouro</label>
+                    <button type="button" id="btn-fetch-market" class="btn btn-primary">
+                        <span id="btn-fetch-market-label">🔄 Buscar preços atuais</span>
+                    </button>
+                    <small class="text-muted" style="display: block; margin-top: 8px;">Consulta o preço unitário de resgate (PU de venda) de cada título diretamente no Tesouro Direto e preenche os campos abaixo.</small>
+                </div>
                 <div style="margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--card-border);">
-                    <label for="upload-excel" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Automático: Importar Planilha do Tesouro (Excel)</label>
+                    <label for="upload-excel" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Manual: Importar Planilha do Tesouro (Excel)</label>
                     <input type="file" id="upload-excel" accept=".xlsx, .xls, .csv" style="border: none; padding: 0; background: transparent;">
                     <small class="text-muted" style="display: block; margin-top: 8px;">Faz a leitura das colunas "Título" e "Preço unitário de resgate".</small>
                 </div>
