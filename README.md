@@ -21,8 +21,9 @@ todos os dados ficam salvos no seu próprio navegador (`localStorage`).
 - 🏷️ **Cards de resumo por título** e **filtro** para visualizar um título específico.
 - ↕️ **Ordenação** por qualquer coluna (clique no cabeçalho).
 - ➕ **Cadastro, edição e exclusão** de aportes, com máscara de data e autocompletar de títulos.
-- 📈 **Marcação a mercado**: informe os preços atuais manualmente ou
-  **importe a planilha de resgate do Tesouro** (`.xlsx`, `.xls` ou `.csv`).
+- 📈 **Marcação a mercado**: busque os preços atuais **automaticamente na API
+  oficial do Tesouro Direto**, importe a **planilha de resgate** (`.xlsx`,
+  `.xls` ou `.csv`) ou informe manualmente.
 - 💾 **Backup**: exporte a carteira em JSON e importe novamente quando quiser.
 - ♻️ **Restaurar dados iniciais** de exemplo a qualquer momento.
 - 🔔 **Notificações (toasts)** e validação de formulário.
@@ -49,8 +50,11 @@ Depois acesse `http://localhost:8000`.
 
 ## 📥 Importando a planilha do Tesouro
 
-No modal **Atualizar Mercado** é possível enviar a planilha de resgate exportada
-pelo site do Tesouro Direto. A leitura considera:
+No modal **Atualizar Mercado** o botão **🔄 Buscar preços atuais** consulta a API
+oficial do Tesouro Direto e preenche o preço unitário de resgate (PU de venda) de
+cada título automaticamente. Caso o navegador bloqueie a chamada (CORS) ou você
+prefira, também é possível enviar a planilha de resgate exportada pelo site do
+Tesouro Direto. A leitura da planilha considera:
 
 - **Coluna 1** → nome do título (deve bater exatamente com o título cadastrado);
 - **Coluna 3** → *Preço unitário de resgate*.
