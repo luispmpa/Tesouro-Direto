@@ -1198,21 +1198,21 @@ function renderTable() {
         const rentSign = item.rentabilidadeRS >= 0 ? '+' : '';
 
         tr.innerHTML = `
-            <td>${item.titulo}</td>
-            <td>${item.dataAplicacao}</td>
-            <td>${item.quantidade.toFixed(4)}</td>
-            <td>${formatCurrency(item.precoUnitario)}</td>
-            <td>${formatCurrency(item.investidoCalc)}</td>
-            <td>${item.taxaContratada}</td>
-            <td><strong>${formatCurrency(item.precoMercado)}</strong></td>
-            <td>${formatCurrency(item.valorAtual)}</td>
-            <td class="${rentClass}">
+            <td data-label="Título" class="cell-titulo">${item.titulo}</td>
+            <td data-label="Data Aplicação">${item.dataAplicacao}</td>
+            <td data-label="Quantidade">${item.quantidade.toFixed(4)}</td>
+            <td data-label="Preço Compra">${formatCurrency(item.precoUnitario)}</td>
+            <td data-label="Valor Investido">${formatCurrency(item.investidoCalc)}</td>
+            <td data-label="Taxa Contratada">${item.taxaContratada}</td>
+            <td data-label="Preço Mercado"><strong>${formatCurrency(item.precoMercado)}</strong></td>
+            <td data-label="Valor Atual">${formatCurrency(item.valorAtual)}</td>
+            <td data-label="Rentab. (R$)" class="${rentClass}">
                 ${rentSign}${formatCurrency(item.rentabilidadeRS)}
             </td>
-            <td class="${rentClass}">
+            <td data-label="Rentab. (%)" class="${rentClass}">
                 ${rentSign}${item.rentabilidadePct.toFixed(2)}%
             </td>
-            <td>
+            <td data-label="Ações" class="cell-actions">
                 <div class="action-btns">
                     <button class="btn-icon" onclick="editInvestment('${item.id}')" title="Editar">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
