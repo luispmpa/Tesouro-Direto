@@ -398,14 +398,297 @@ input:focus {
     background: rgba(255,255,255,0.3);
 }
 
+/* ==========================================================================
+   RESPONSIVIDADE / MOBILE (não afeta o layout desktop)
+   Breakpoints:  ≤1024px (tablet)  •  ≤768px (mobile)  •  ≤480px (small)
+   ========================================================================== */
+
+/* --- Tablet --- */
+@media (max-width: 1024px) {
+    .container {
+        width: 100%;
+        padding: 1.5rem;
+    }
+    header {
+        margin-bottom: 2rem;
+    }
+    .dashboard {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+    .metric-value {
+        font-size: 1.6rem;
+    }
+}
+
+/* --- Mobile (≤768px) --- */
 @media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    /* Reduz blobs animados para poupar GPU em telas pequenas */
+    .blur-blob {
+        filter: blur(70px);
+        opacity: 0.3;
+    }
+
+    /* ---- Header: vira coluna, ações em grid de toque confortável ---- */
+    header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        margin-bottom: 1.5rem;
+    }
+    .logo {
+        justify-content: center;
+    }
+    h1 {
+        font-size: 1.25rem;
+        text-align: center;
+    }
+    .header-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .header-actions .btn {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.85rem;
+    }
+    /* Botão principal (Novo Aporte) ocupa a linha inteira em destaque */
+    #btn-new-investment {
+        grid-column: 1 / -1;
+    }
+
+    /* ---- Dashboard: cards empilhados ---- */
+    .dashboard {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 1.5rem;
+    }
+    .card {
+        padding: 18px;
+    }
+    .metric-value {
+        font-size: 1.75rem;
+    }
+
+    /* ---- Form rows empilhadas ---- */
     .form-row {
         flex-direction: column;
         gap: 0;
     }
-    .header-actions {
+
+    /* ---- Cabeçalho da tabela ---- */
+    .table-header {
+        padding: 18px;
+    }
+    .table-header .filter-group {
+        width: 100%;
         flex-direction: column;
+        align-items: stretch !important;
+    }
+    .table-header .form-select {
+        width: 100%;
+    }
+    .table-header .btn-reset,
+    #btn-reset {
+        width: 100%;
+    }
+
+    /* ---- Summary cards: rolagem horizontal com snap ---- */
+    .summary-cards-container {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 6px;
+        margin: 0 -1rem 16px;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .summary-card {
+        scroll-snap-align: start;
+        flex: 0 0 auto;
+        min-width: 160px;
+    }
+
+    /* ====================================================================
+       TABELA → CARTÕES (transformação só no mobile)
+       Cada <tr> vira um cartão; cada <td> usa o data-label como rótulo.
+       ==================================================================== */
+    .table-responsive {
+        overflow-x: visible;
+    }
+    #portfolio-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    #portfolio-table,
+    #portfolio-table tbody,
+    #portfolio-table tr,
+    #portfolio-table td {
+        display: block;
+        width: 100%;
+    }
+    #portfolio-table tr {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 6px 14px;
+        margin: 0 14px 14px;
+    }
+    #portfolio-table tr:hover td {
+        background: transparent;
+    }
+    #portfolio-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--card-border);
+        font-size: 0.9rem;
+        text-align: right;
+    }
+    #portfolio-table td:last-child {
+        border-bottom: none;
+    }
+    /* Rótulo gerado a partir do data-label */
+    #portfolio-table td::before {
+        content: attr(data-label);
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        text-align: left;
+        flex: 0 0 auto;
+        margin-right: 8px;
+    }
+    /* Título: destaque no topo do cartão */
+    #portfolio-table td.cell-titulo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        text-align: left;
+        padding-top: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    #portfolio-table td.cell-titulo::before {
+        color: var(--primary-color);
+    }
+    /* Ações: botões maiores, alinhados à direita */
+    #portfolio-table td.cell-actions {
+        justify-content: flex-end;
+        padding-top: 12px;
+    }
+    #portfolio-table td.cell-actions::before {
+        margin-right: auto;
+    }
+    #portfolio-table .action-btns {
+        gap: 12px;
+    }
+    #portfolio-table td.cell-actions .btn-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--card-border);
+    }
+    /* Empty state continua centralizado */
+    #portfolio-table tr.empty-state {
+        display: block;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+    #portfolio-table tr.empty-state td {
+        display: block;
+        text-align: center;
+        border: none;
+    }
+    #portfolio-table tr.empty-state td::before {
+        content: none;
+    }
+
+    /* ---- Modais: viram bottom-sheet ---- */
+    .modal {
         align-items: flex-end;
+    }
+    .modal-content {
+        max-width: 100%;
+        max-height: 92vh;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        transform: translateY(100%);
+    }
+    .modal.active .modal-content {
+        transform: translateY(0);
+    }
+    .modal-header h2 {
+        font-size: 1.1rem;
+    }
+    .close-modal {
+        font-size: 1.8rem;
+        padding: 4px 8px;
+    }
+
+    /* ---- Market price items empilham ---- */
+    .market-price-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .market-price-input {
+        width: 100%;
+    }
+
+    /* Inputs maiores evitam zoom automático no iOS (font-size ≥16px) */
+    input,
+    .form-select,
+    select {
+        font-size: 16px;
+    }
+}
+
+/* --- Small phones (≤480px) --- */
+@media (max-width: 480px) {
+    .container {
+        padding: 0.75rem;
+    }
+    .header-actions {
+        grid-template-columns: 1fr;
+    }
+    #btn-new-investment {
+        grid-column: auto;
+    }
+    h1 {
+        font-size: 1.15rem;
+    }
+    .metric-value {
+        font-size: 1.6rem;
+    }
+    #portfolio-table tr {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .app-footer {
+        font-size: 0.8rem;
     }
 }
 
