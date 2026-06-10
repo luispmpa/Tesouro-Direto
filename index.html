@@ -40,6 +40,15 @@
                 <h1>Minha Carteira Tesouro</h1>
             </div>
             <div class="header-actions">
+                <input type="file" id="import-file" accept="application/json,.json" hidden>
+                <button id="btn-export" class="btn btn-secondary" title="Baixar um backup da carteira em JSON">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    Exportar
+                </button>
+                <button id="btn-import" class="btn btn-secondary" title="Restaurar a carteira a partir de um backup JSON">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    Importar
+                </button>
                 <button id="btn-update-market" class="btn btn-secondary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                     Atualizar Mercado
@@ -74,11 +83,12 @@
             </div>
             <div class="card table-card">
                 <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                    <h2>Meus Títulos</h2>
-                    <div class="filter-group">
+                    <h2>Meus Títulos <span id="aportes-count" class="count-badge">0</span></h2>
+                    <div class="filter-group" style="display: flex; align-items: center; gap: 12px;">
                         <select id="titulo-filter" class="form-select" style="padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: white; font-family: var(--font-family); outline: none;">
                             <option value="Todos">Todos os Títulos</option>
                         </select>
+                        <button id="btn-reset" class="btn btn-secondary btn-sm" title="Restaurar a carteira para os dados iniciais de exemplo">Restaurar dados</button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -105,7 +115,18 @@
                 </div>
             </div>
         </section>
+
+        <footer class="app-footer">
+            <p>
+                Os valores de <strong>Saldo Bruto</strong> e <strong>Rentabilidade</strong> são estimativas baseadas na
+                marcação a mercado que você informar. Os dados ficam salvos apenas neste navegador (localStorage).
+                Faça backups periódicos com o botão <strong>Exportar</strong>.
+            </p>
+            <p class="text-muted">Ferramenta de acompanhamento pessoal — não constitui recomendação de investimento.</p>
+        </footer>
     </div>
+
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- Modal Novo Aporte -->
     <div id="modal-new" class="modal">
