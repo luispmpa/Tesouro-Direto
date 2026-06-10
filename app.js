@@ -802,202 +802,7 @@ const INITIAL_DATA = [
     "taxaContratada": "IPCA + 7,84%"
   },
   {
-    "id": "Tesouro-IPCA+-2029-18-12-2024-126.01",
-    "titulo": "Tesouro IPCA+ 2029",
-    "dataAplicacao": "18/12/2024",
-    "quantidade": 0.04,
-    "precoUnitario": 3150.36,
-    "valorInvestido": 126.01,
-    "taxaContratada": "IPCA + 7,84%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2029-19-12-2024-220.54",
-    "titulo": "Tesouro IPCA+ 2029",
-    "dataAplicacao": "19/12/2024",
-    "quantidade": 0.07,
-    "precoUnitario": 3150.67,
-    "valorInvestido": 220.54,
-    "taxaContratada": "IPCA + 7,85%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2029-2-1-2025-158.14",
-    "titulo": "Tesouro IPCA+ 2029",
-    "dataAplicacao": "2/1/2025",
-    "quantidade": 0.05,
-    "precoUnitario": 3162.94,
-    "valorInvestido": 158.14,
-    "taxaContratada": "IPCA + 7,87%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2032-9-6-2026-173.38",
-    "titulo": "Tesouro IPCA+ 2032",
-    "dataAplicacao": "9/6/2026",
-    "quantidade": 1.0,
-    "precoUnitario": 173.38,
-    "valorInvestido": 173.38,
-    "taxaContratada": "IPCA + 8,32"
-  },
-  {
-    "id": "Tesouro-Selic-2031-05-06-2026-190.94",
-    "titulo": "Tesouro Selic 2031",
-    "dataAplicacao": "05/06/2026",
-    "quantidade": 0.01,
-    "precoUnitario": 19094.13,
-    "valorInvestido": 190.94,
-    "taxaContratada": "SELIC + 0,074%"
-  },
-  {
-    "id": "Tesouro-Selic-2031-08-04-2026-3923.98",
-    "titulo": "Tesouro Selic 2031",
-    "dataAplicacao": "08/04/2026",
-    "quantidade": 0.21,
-    "precoUnitario": 18685.66,
-    "valorInvestido": 3923.98,
-    "taxaContratada": "SELIC + 0,086%"
-  },
-  {
-    "id": "Tesouro-Selic-2031-25-03-2026-3717.53",
-    "titulo": "Tesouro Selic 2031",
-    "dataAplicacao": "25/03/2026",
-    "quantidade": 0.2,
-    "precoUnitario": 18587.65,
-    "valorInvestido": 3717.53,
-    "taxaContratada": "SELIC + 0,093%"
-  },
-  {
-    "id": "Tesouro-Selic-2031-27-01-2026-45464.6",
-    "titulo": "Tesouro Selic 2031",
-    "dataAplicacao": "27/01/2026",
-    "quantidade": 2.5,
-    "precoUnitario": 18185.84,
-    "valorInvestido": 45464.6,
-    "taxaContratada": "SELIC + 0,098%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2032-10-06-2026-489.81",
-    "titulo": "Tesouro IPCA+ 2032",
-    "dataAplicacao": "10/06/2026",
-    "quantidade": 1.0,
-    "precoUnitario": 489.81,
-    "valorInvestido": 489.81,
-    "id": "Tesouro-Renda+-Aposentadoria-Extra-2065-20-01-2026-100.4",
-    "titulo": "Tesouro Renda+ Aposentadoria Extra 2065",
-    "dataAplicacao": "20/01/2026",
-    "quantidade": 0.58,
-    "precoUnitario": 173.12,
-    "valorInvestido": 100.4,
-    "taxaContratada": "IPCA + 7,14%"
-  },
-  {
-    "id": "Tesouro-Renda+-Aposentadoria-Extra-2065-15-01-2026-201.35",
-    "titulo": "Tesouro Renda+ Aposentadoria Extra 2065",
-    "dataAplicacao": "15/01/2026",
-    "quantidade": 1.18,
-    "precoUnitario": 170.64,
-    "valorInvestido": 201.35,
-    "taxaContratada": "IPCA + 7,17%"
-  },
-  {
-    "id": "Tesouro-Renda+-Aposentadoria-Extra-2065-21-08-2025-39.08",
-    "titulo": "Tesouro Renda+ Aposentadoria Extra 2065",
-    "dataAplicacao": "21/08/2025",
-    "quantidade": 0.24,
-    "precoUnitario": 162.84,
-    "valorInvestido": 39.08,
-    "taxaContratada": "IPCA + 7,19%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2045-17-12-2024-499.54",
-    "titulo": "Tesouro IPCA+ 2045",
-    "dataAplicacao": "17/12/2024",
-    "quantidade": 0.47,
-    "precoUnitario": 1062.87,
-    "valorInvestido": 499.54,
-    "taxaContratada": "IPCA + 7,23%"
-  },
-  {
-    "id": "Tesouro-Renda+-Aposentadoria-Extra-2065-12-03-2025-48.95",
-    "titulo": "Tesouro Renda+ Aposentadoria Extra 2065",
-    "dataAplicacao": "12/03/2025",
-    "quantidade": 0.33,
-    "precoUnitario": 148.36,
-    "valorInvestido": 48.95,
-    "taxaContratada": "IPCA + 7,29%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2045-16-01-2025-295.03",
-    "titulo": "Tesouro IPCA+ 2045",
-    "dataAplicacao": "16/01/2025",
-    "quantidade": 0.28,
-    "precoUnitario": 1053.68,
-    "valorInvestido": 295.03,
-    "taxaContratada": "IPCA + 7,33%"
-  },
-  {
-    "id": "Tesouro-Renda+-Aposentadoria-Extra-2065-18-03-2025-63.75",
-    "titulo": "Tesouro Renda+ Aposentadoria Extra 2065",
-    "dataAplicacao": "18/03/2025",
-    "quantidade": 0.44,
-    "precoUnitario": 144.9,
-    "valorInvestido": 63.75,
-    "taxaContratada": "IPCA + 7,35%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2029-09-12-2024-191.82",
-    "titulo": "Tesouro IPCA+ 2029",
-    "dataAplicacao": "09/12/2024",
-    "quantidade": 0.06,
-    "precoUnitario": 3197.04,
-    "valorInvestido": 191.82,
-    "taxaContratada": "IPCA + 7,38%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2045-20-01-2025-31.21",
-    "titulo": "Tesouro IPCA+ 2045",
-    "dataAplicacao": "20/01/2025",
-    "quantidade": 0.03,
-    "precoUnitario": 1040.54,
-    "valorInvestido": 31.21,
-    "taxaContratada": "IPCA + 7,40%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2050-28-02-2025-65.23",
-    "titulo": "Tesouro IPCA+ 2050",
-    "dataAplicacao": "28/02/2025",
-    "quantidade": 0.09,
-    "precoUnitario": 724.78,
-    "valorInvestido": 65.23,
-    "taxaContratada": "IPCA + 7,43%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2050-06-02-2025-35.01",
-    "titulo": "Tesouro IPCA+ 2050",
-    "dataAplicacao": "06/02/2025",
-    "quantidade": 0.05,
-    "precoUnitario": 700.25,
-    "valorInvestido": 35.01,
-    "taxaContratada": "IPCA + 7,52%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2029-16-12-2024-285.9",
-    "titulo": "Tesouro IPCA+ 2029",
-    "dataAplicacao": "16/12/2024",
-    "quantidade": 0.09,
-    "precoUnitario": 3176.7,
-    "valorInvestido": 285.9,
-    "taxaContratada": "IPCA + 7,61%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2029-18-12-2024-126.01",
-    "titulo": "Tesouro IPCA+ 2029",
-    "dataAplicacao": "18/12/2024",
-    "quantidade": 0.04,
-    "precoUnitario": 3150.36,
-    "valorInvestido": 126.01,
-    "taxaContratada": "IPCA + 7,84%"
-  },
-  {
-    "id": "Tesouro-IPCA+-2029-18-12-2024-126.01",
+    "id": "Tesouro-IPCA+-2029-18-12-2024-126.01-b",
     "titulo": "Tesouro IPCA+ 2029",
     "dataAplicacao": "18/12/2024",
     "quantidade": 0.04,
@@ -1092,22 +897,75 @@ const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-    }).format(value);
+    }).format(Number.isFinite(value) ? value : 0);
 };
+
+// Geração de ID robusta (evita colisões do Date.now quando há aportes em sequência)
+function generateId() {
+    if (window.crypto && typeof crypto.randomUUID === 'function') {
+        return 'aporte-' + crypto.randomUUID();
+    }
+    return 'aporte-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+// Notificações (toast)
+function showToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// Remove aportes com ID duplicado (mantém o primeiro) e garante que todo item tenha um ID
+function sanitizePortfolio(list) {
+    const seen = new Set();
+    const result = [];
+    (Array.isArray(list) ? list : []).forEach(item => {
+        if (!item || typeof item !== 'object') return;
+        if (!item.id) item.id = generateId();
+        if (seen.has(item.id)) return; // descarta duplicado
+        seen.add(item.id);
+        result.push(item);
+    });
+    return result;
+}
 
 // Inicialização
 function init() {
     const saved = localStorage.getItem('tesouro_portfolio');
     if (saved) {
-        portfolio = JSON.parse(saved);
+        try {
+            const parsed = JSON.parse(saved);
+            const clean = sanitizePortfolio(parsed);
+            portfolio = clean;
+            // Se a limpeza removeu duplicatas (dados corrompidos por versões antigas), persiste a correção
+            if (clean.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
+                saveData();
+            }
+        } catch (e) {
+            console.error('Falha ao ler a carteira salva, restaurando dados iniciais:', e);
+            portfolio = sanitizePortfolio(INITIAL_DATA);
+            saveData();
+        }
     } else {
-        portfolio = INITIAL_DATA;
+        portfolio = sanitizePortfolio(INITIAL_DATA);
         saveData();
     }
 
     const savedPrices = localStorage.getItem('tesouro_market_prices');
     if (savedPrices) {
-        marketPrices = JSON.parse(savedPrices);
+        try {
+            marketPrices = JSON.parse(savedPrices) || {};
+        } catch (e) {
+            marketPrices = {};
+        }
     }
 
     renderDashboard();
@@ -1115,6 +973,7 @@ function init() {
     setupModals();
     setupFilter();
     setupSorting();
+    setupDataTools();
 }
 
 function saveData() {
@@ -1256,9 +1115,21 @@ function renderTable() {
         });
     }
 
+    const countBadge = document.getElementById('aportes-count');
+    if (countBadge) countBadge.textContent = filteredPortfolio.length;
+
+    if (filteredPortfolio.length === 0) {
+        const tr = document.createElement('tr');
+        tr.className = 'empty-state';
+        tr.innerHTML = `<td colspan="11">Nenhum aporte encontrado. Clique em <strong>Novo Aporte</strong> para começar.</td>`;
+        tbody.appendChild(tr);
+        renderSummaries();
+        return;
+    }
+
     filteredPortfolio.forEach(item => {
         const tr = document.createElement('tr');
-        
+
         const rentClass = item.rentabilidadeRS >= 0 ? 'td-success' : 'td-danger';
         const rentSign = item.rentabilidadeRS >= 0 ? '+' : '';
 
@@ -1315,8 +1186,10 @@ function deleteInvestment(id) {
     if (confirm('Tem certeza que deseja excluir este aporte?')) {
         portfolio = portfolio.filter(p => p.id !== id);
         saveData();
+        updateTitleLists();
         renderDashboard();
         renderTable();
+        showToast('Aporte excluído.', 'info');
     }
 }
 
@@ -1370,12 +1243,26 @@ function setupModals() {
     document.getElementById('form-new-investment').addEventListener('submit', (e) => {
         e.preventDefault();
         
-        const titulo = document.getElementById('titulo').value;
-        const data = document.getElementById('dataAplicacao').value;
-        const taxa = document.getElementById('taxaContratada').value;
+        const titulo = document.getElementById('titulo').value.trim();
+        const data = document.getElementById('dataAplicacao').value.trim();
+        const taxa = document.getElementById('taxaContratada').value.trim();
         const qtd = parseFloat(document.getElementById('quantidade').value);
         const preco = parseFloat(document.getElementById('precoUnitario').value);
-        
+
+        // Validação básica
+        if (!titulo || !data || !taxa) {
+            showToast('Preencha todos os campos do aporte.', 'error');
+            return;
+        }
+        if (!Number.isFinite(qtd) || qtd <= 0 || !Number.isFinite(preco) || preco <= 0) {
+            showToast('Quantidade e preço devem ser números maiores que zero.', 'error');
+            return;
+        }
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) {
+            showToast('Informe a data no formato DD/MM/AAAA.', 'error');
+            return;
+        }
+
         if (editingId) {
             // Update existing
             const index = portfolio.findIndex(p => p.id === editingId);
@@ -1393,7 +1280,7 @@ function setupModals() {
         } else {
             // Create new
             const novoAporte = {
-                id: Date.now().toString(),
+                id: generateId(),
                 titulo,
                 dataAplicacao: data,
                 quantidade: qtd,
@@ -1403,14 +1290,15 @@ function setupModals() {
             };
             portfolio.push(novoAporte);
         }
-        
+
         saveData();
         updateTitleLists();
         renderDashboard();
         renderTable();
-        
+
         e.target.reset();
         modalNew.classList.remove('active');
+        showToast(editingId ? 'Aporte atualizado com sucesso.' : 'Aporte cadastrado com sucesso.', 'success');
     });
 
     // Atualizar Mercado
@@ -1455,12 +1343,13 @@ function setupModals() {
                     const worksheet = workbook.Sheets[firstSheetName];
                     
                     const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
+
+                    let matched = 0;
                     json.forEach(row => {
                         if (row.length >= 3) {
                             const titulo = row[0] ? row[0].toString().trim() : '';
                             const precoBruto = row[2];
-                            
+
                             const input = document.querySelector(`.market-price-input[data-titulo="${titulo}"]`);
                             if (input && precoBruto) {
                                 let parsedPrice = 0;
@@ -1470,18 +1359,25 @@ function setupModals() {
                                     let clean = precoBruto.replace(/R\$\s*/gi, '').replace(/\./g, '').replace(',', '.').trim();
                                     parsedPrice = parseFloat(clean);
                                 }
-                                
+
                                 if (!isNaN(parsedPrice) && parsedPrice > 0) {
                                     input.value = parsedPrice.toFixed(2);
                                     input.style.borderColor = 'var(--success-color)';
                                     input.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+                                    matched++;
                                 }
                             }
                         }
                     });
+
+                    if (matched > 0) {
+                        showToast(`${matched} preço(s) reconhecido(s) na planilha. Confira e clique em Atualizar.`, 'success');
+                    } else {
+                        showToast('Nenhum título da carteira foi encontrado na planilha. Verifique as colunas "Título" e "Preço unitário de resgate".', 'error', 5000);
+                    }
                 } catch(error) {
                     console.error("Erro ao ler o arquivo Excel:", error);
-                    alert("Erro ao ler o arquivo. Certifique-se de que é uma planilha válida.");
+                    showToast('Erro ao ler o arquivo. Certifique-se de que é uma planilha válida.', 'error', 5000);
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -1495,14 +1391,17 @@ function setupModals() {
         inputs.forEach(input => {
             const t = input.getAttribute('data-titulo');
             const val = parseFloat(input.value);
-            marketPrices[t] = val;
+            if (Number.isFinite(val) && val > 0) {
+                marketPrices[t] = val;
+            }
         });
-        
+
         savePrices();
         renderDashboard();
         renderTable();
-        
+
         modalMarket.classList.remove('active');
+        showToast('Preços de mercado atualizados.', 'success');
     });
 
     // Close buttons
@@ -1581,6 +1480,93 @@ function setupSorting() {
             renderTable();
         });
     });
+}
+
+// Ferramentas de dados: Exportar / Importar / Restaurar
+function setupDataTools() {
+    const btnExport = document.getElementById('btn-export');
+    const btnImport = document.getElementById('btn-import');
+    const importFile = document.getElementById('import-file');
+    const btnReset = document.getElementById('btn-reset');
+
+    if (btnExport) {
+        btnExport.addEventListener('click', () => {
+            const backup = {
+                versao: 1,
+                exportadoEm: new Date().toISOString(),
+                portfolio,
+                marketPrices
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `carteira-tesouro-${stamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast('Backup exportado.', 'success');
+        });
+    }
+
+    if (btnImport && importFile) {
+        btnImport.addEventListener('click', () => importFile.click());
+
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    // Aceita tanto o formato de backup { portfolio, marketPrices } quanto um array puro de aportes
+                    const incoming = Array.isArray(parsed) ? parsed : parsed.portfolio;
+                    if (!Array.isArray(incoming)) {
+                        throw new Error('Estrutura inválida');
+                    }
+                    if (!confirm('Importar este backup substituirá a carteira atual. Deseja continuar?')) {
+                        return;
+                    }
+                    portfolio = sanitizePortfolio(incoming);
+                    if (parsed && parsed.marketPrices && typeof parsed.marketPrices === 'object') {
+                        marketPrices = parsed.marketPrices;
+                        savePrices();
+                    }
+                    saveData();
+                    updateTitleLists();
+                    renderDashboard();
+                    renderTable();
+                    showToast(`Backup importado: ${portfolio.length} aporte(s).`, 'success');
+                } catch (err) {
+                    console.error('Erro ao importar backup:', err);
+                    showToast('Arquivo inválido. Selecione um backup JSON gerado por esta ferramenta.', 'error', 5000);
+                } finally {
+                    importFile.value = ''; // permite reimportar o mesmo arquivo
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (!confirm('Isto substituirá sua carteira pelos dados iniciais de exemplo. Esta ação não pode ser desfeita. Deseja continuar?')) {
+                return;
+            }
+            portfolio = sanitizePortfolio(INITIAL_DATA);
+            marketPrices = {};
+            saveData();
+            savePrices();
+            currentFilter = 'Todos';
+            updateTitleLists();
+            renderDashboard();
+            renderTable();
+            showToast('Carteira restaurada para os dados iniciais.', 'info');
+        });
+    }
 }
 
 // Iniciar Aplicação

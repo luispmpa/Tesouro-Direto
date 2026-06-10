@@ -521,3 +521,85 @@ th[data-sort].sort-desc::after {
     background: rgba(239, 68, 68, 0.2);
     color: var(--danger-color);
 }
+
+/* Small button */
+.btn-sm {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+/* Count badge next to table title */
+.count-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93C5FD;
+    font-size: 0.75rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* Empty state */
+.empty-state td {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--text-secondary);
+}
+
+/* Footer */
+.app-footer {
+    margin-top: 2rem;
+    padding: 20px 4px;
+    border-top: 1px solid var(--card-border);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.app-footer p { margin-bottom: 6px; }
+.app-footer strong { color: var(--text-primary); font-weight: 600; }
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 2000;
+}
+
+.toast {
+    min-width: 260px;
+    max-width: 360px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid var(--card-border);
+    border-left: 3px solid var(--primary-color);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast.toast-success { border-left-color: var(--success-color); }
+.toast.toast-error { border-left-color: var(--danger-color); }
+.toast.toast-info { border-left-color: var(--info-color); }
+
+@media (max-width: 600px) {
+    .toast-container { left: 16px; right: 16px; bottom: 16px; }
+    .toast { min-width: 0; max-width: none; }
+}
