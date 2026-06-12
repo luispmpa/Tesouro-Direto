@@ -26,13 +26,30 @@ snapshot do IBOV, alertas locais e PGBL manual. A Parte 2 liga o "modo completo"
 
 ### 2.1 Instalar o código
 
+> ⚠️ **Importante:** no Apps Script todos os arquivos `.gs` dividem o **mesmo
+> escopo global**. Se a sua planilha **já tem** a automação (funções como
+> `importarAportesPGBL`/`verificarAlertas`, como no projeto "Alertas IBOV"),
+> **não** cole o `Code.gs` completo — ele declara um segundo `CONFIG` e dá o
+> erro `Identifier 'CONFIG' has already been declared`. Use o **bridge**.
+
+**Cenário A — você JÁ tem a automação (recomendado para o "Alertas IBOV"):**
+
 1. Abra a planilha **IBOV_26-05-26** → **Extensões → Apps Script**.
-2. Cole o conteúdo de [`apps-script/Code.gs`](../apps-script/Code.gs) em um
-   arquivo novo do projeto (mantenha o script antigo até validar — nada é
-   sobrescrito automaticamente).
-3. Confira o bloco `CONFIG` no topo: os nomes das abas (`IBOV`,
-   `Tesouro Direto`, `Alertas`, `PGBL`) devem bater com os da sua planilha.
-4. Salve. Recarregue a planilha — o menu **📊 Painel Financeiro** aparece.
+2. Em um arquivo novo do projeto, cole o conteúdo de
+   [`apps-script/WebApp-Bridge.gs`](../apps-script/WebApp-Bridge.gs).
+   (Se você já tinha colado o `Code.gs` completo, **substitua todo o conteúdo
+   desse arquivo** pelo do bridge.) **Não mexa** nos arquivos antigos.
+3. O bridge usa `PAINEL_CONFIG` no topo, com os nomes das abas (`IBOV`,
+   `Tesouro Direto`, `Alertas`, `PGBL`) — eles já batem com a sua planilha.
+4. Salve. O erro de `CONFIG` desaparece. (Este arquivo não cria menu próprio;
+   o seu menu/gatilhos atuais continuam intactos.)
+
+**Cenário B — instalação do zero (planilha sem automação):**
+
+1. Em um arquivo novo, cole [`apps-script/Code.gs`](../apps-script/Code.gs).
+2. Confira o bloco `CONFIG` (logo abaixo do comentário de cabeçalho): os nomes
+   das abas devem bater com os da sua planilha.
+3. Salve e recarregue a planilha — o menu **📊 Painel Financeiro** aparece.
 
 ### 2.2 Autorizar permissões
 
@@ -49,8 +66,11 @@ autorização para os escopos usados:
 
 ### 2.3 Gerar o token e publicar o Web App
 
-1. Menu **📊 Painel Financeiro → Gerar token do Web App** — copie o token
-   (fica salvo em *Script Properties*, chave `API_TOKEN`).
+1. Gere o token (fica salvo em *Script Properties*, chave `API_TOKEN`):
+   - **Cenário A (bridge):** no dropdown de função do editor selecione
+     `painel_gerarToken` → **Executar** e copie o token no **Registro de
+     execução**.
+   - **Cenário B (Code.gs):** menu **📊 Painel Financeiro → Gerar token do Web App**.
 2. **Implantar → Novo deployment → Tipo: App da Web**:
    - *Executar como*: **Eu**;
    - *Quem pode acessar*: **Qualquer pessoa** (a proteção é o token).
@@ -58,7 +78,14 @@ autorização para os escopos usados:
 
 ### 2.4 Instalar os gatilhos
 
-Menu **📊 Painel Financeiro → Instalar/atualizar gatilhos**. Cria:
+**Cenário A (bridge):** seus gatilhos atuais (importação PGBL e verificação de
+alertas do script original) **continuam valendo** — não recrie nada. O bridge
+não agenda gatilhos; ele só expõe o endpoint e dispara as suas funções quando o
+painel pede (`?acao=...`). O histórico de taxas é opcional: para tê-lo na
+planilha, crie um gatilho diário apontando para `painel_atualizarTaxasTesouro`.
+
+**Cenário B (Code.gs):** menu **📊 Painel Financeiro → Instalar/atualizar
+gatilhos**. Cria:
 
 | Função | Frequência | O que faz |
 |---|---|---|
