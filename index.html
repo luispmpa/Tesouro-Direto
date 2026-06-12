@@ -3,214 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0F172A">
-    <meta name="color-scheme" content="dark">
-    <title>Tesouro Direto | Carteira</title>
+    <meta name="theme-color" content="#0B1220">
+    <meta name="color-scheme" content="dark light">
+    <title>Painel Financeiro | Tesouro, IBOV, PGBL e Alertas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
-    <div class="background-elements">
-        <div class="blur-blob blob-1"></div>
-        <div class="blur-blob blob-2"></div>
-    </div>
-
-    <div class="container">
-        <header>
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#paint0_linear)"/>
-                    <path d="M2 17L12 22L22 17" stroke="url(#paint1_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M2 12L12 17L22 12" stroke="url(#paint2_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <defs>
-                        <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="12" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#38BDF8"/>
-                            <stop offset="1" stop-color="#3B82F6"/>
-                        </linearGradient>
-                        <linearGradient id="paint1_linear" x1="12" y1="17" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#818CF8"/>
-                            <stop offset="1" stop-color="#6366F1"/>
-                        </linearGradient>
-                        <linearGradient id="paint2_linear" x1="12" y1="12" x2="12" y2="17" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#A78BFA"/>
-                            <stop offset="1" stop-color="#8B5CF6"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <h1>Minha Carteira Tesouro</h1>
-            </div>
-            <div class="header-actions">
-                <input type="file" id="import-file" accept="application/json,.json" hidden>
-                <button id="btn-export" class="btn btn-secondary" title="Baixar um backup da carteira em JSON">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                    Exportar
-                </button>
-                <button id="btn-import" class="btn btn-secondary" title="Restaurar a carteira a partir de um backup JSON">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                    Importar
-                </button>
-                <button id="btn-update-market" class="btn btn-secondary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                    Atualizar Mercado
-                </button>
-                <button id="btn-new-investment" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                    Novo Aporte
-                </button>
-            </div>
-        </header>
-
-        <section class="dashboard">
-            <div class="card metric-card">
-                <h3>Total Investido</h3>
-                <p id="total-investido" class="metric-value">R$ 0,00</p>
-            </div>
-            <div class="card metric-card">
-                <h3>Saldo Bruto Atual</h3>
-                <p id="saldo-bruto" class="metric-value highlight">R$ 0,00</p>
-                <span class="badge badge-info">Marcação a Mercado</span>
-            </div>
-            <div class="card metric-card">
-                <h3>Rentabilidade</h3>
-                <p id="rentabilidade-valor" class="metric-value success">R$ +0,00</p>
-                <span id="rentabilidade-percent" class="badge badge-success">+0.00%</span>
-            </div>
-        </section>
-
-        <section class="portfolio">
-            <div id="title-summary-cards" class="summary-cards-container">
-                <!-- Preenchido via JS -->
-            </div>
-            <div class="card table-card">
-                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                    <h2>Meus Títulos <span id="aportes-count" class="count-badge">0</span></h2>
-                    <div class="filter-group" style="display: flex; align-items: center; gap: 12px;">
-                        <select id="titulo-filter" class="form-select" style="padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: white; font-family: var(--font-family); outline: none;">
-                            <option value="Todos">Todos os Títulos</option>
-                        </select>
-                        <button id="btn-reset" class="btn btn-secondary btn-sm" title="Restaurar a carteira para os dados iniciais de exemplo">Restaurar dados</button>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table id="portfolio-table">
-                        <thead>
-                            <tr>
-                                <th data-sort="titulo">Título</th>
-                                <th data-sort="dataAplicacao">Data Aplicação</th>
-                                <th data-sort="quantidade">Quantidade</th>
-                                <th data-sort="precoUnitario">Preço Compra</th>
-                                <th data-sort="investidoCalc">Valor Investido</th>
-                                <th data-sort="taxaContratada">Taxa Contratada</th>
-                                <th data-sort="precoMercado">Preço Mercado</th>
-                                <th data-sort="valorAtual">Valor Atual</th>
-                                <th data-sort="rentabilidadeRS">Rentab. (R$)</th>
-                                <th data-sort="rentabilidadePct">Rentab. (%)</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Preenchido via JS -->
-                        </tbody>
-                    </table>
+    <div class="app">
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <div class="brand-logo">₿</div>
+                <div>
+                    <div class="brand-name">Painel Financeiro</div>
+                    <div class="brand-sub">Tesouro · IBOV · PGBL</div>
                 </div>
             </div>
-        </section>
 
-        <footer class="app-footer">
-            <p>
-                Os valores de <strong>Saldo Bruto</strong> e <strong>Rentabilidade</strong> são estimativas baseadas na
-                marcação a mercado que você informar. Os dados ficam salvos apenas neste navegador (localStorage).
-                Faça backups periódicos com o botão <strong>Exportar</strong>.
-            </p>
-            <p class="text-muted">Ferramenta de acompanhamento pessoal — não constitui recomendação de investimento.</p>
-        </footer>
+            <div class="nav-label">Visão geral</div>
+            <a class="nav-item" href="#/" data-route="/">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                Dashboard
+            </a>
+
+            <div class="nav-label">Investimentos</div>
+            <a class="nav-item" href="#/tesouro" data-route="/tesouro">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+                Tesouro Direto
+            </a>
+            <a class="nav-item" href="#/ibov" data-route="/ibov">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8M21 7v6m0-6h-6"/></svg>
+                IBOV / Ações
+            </a>
+            <a class="nav-item" href="#/pgbl" data-route="/pgbl">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                Previdência PGBL
+            </a>
+
+            <div class="nav-label">Monitoramento</div>
+            <a class="nav-item" href="#/alertas" data-route="/alertas">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>
+                Alertas <span id="nav-alert-badge"></span>
+            </a>
+            <a class="nav-item" href="#/dados" data-route="/dados">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                Dados &amp; Integrações
+            </a>
+
+            <div class="sidebar-footer">
+                Acompanhamento pessoal — não é recomendação de investimento.
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <button class="burger" id="burger" aria-label="Abrir menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                </button>
+                <h1 id="page-title">Dashboard</h1>
+                <div class="spacer"></div>
+                <span class="last-update" id="global-last-update"></span>
+                <button class="btn btn-secondary btn-sm" id="btn-theme" title="Alternar tema claro/escuro">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+                </button>
+                <button class="btn btn-primary btn-sm" id="btn-global-refresh" title="Atualizar dados do Tesouro e da planilha">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    Atualizar
+                </button>
+            </header>
+
+            <main class="content" id="view" aria-live="polite">
+                <!-- Conteúdo renderizado pelo router (assets/js/app.js) -->
+            </main>
+        </div>
     </div>
 
     <div id="toast-container" class="toast-container"></div>
+    <div id="modal-root"></div>
 
-    <!-- Modal Novo Aporte -->
-    <div id="modal-new" class="modal">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <h2 id="modal-new-title">Cadastrar Novo Aporte</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="form-new-investment">
-                    <div class="form-group">
-                        <label for="titulo">Título</label>
-                        <input type="text" id="titulo" required placeholder="Ex: Tesouro Prefixado 2029" list="titulos-list" autocomplete="off">
-                        <datalist id="titulos-list">
-                            <!-- Preenchido via JS -->
-                        </datalist>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="dataAplicacao">Data da Aplicação</label>
-                            <input type="text" id="dataAplicacao" required placeholder="DD/MM/AAAA" maxlength="10">
-                        </div>
-                        <div class="form-group">
-                            <label for="taxaContratada">Taxa Contratada</label>
-                            <input type="text" id="taxaContratada" required placeholder="Ex: 11,45% ou IPCA + 6,01%">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="quantidade">Quantidade</label>
-                            <input type="number" id="quantidade" step="0.01" required placeholder="0.00">
-                        </div>
-                        <div class="form-group">
-                            <label for="precoUnitario">Preço Unitário (R$)</label>
-                            <input type="number" id="precoUnitario" step="0.01" required placeholder="0.00">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Salvar Aporte</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Atualizar Mercado -->
-    <div id="modal-market" class="modal">
-        <div class="modal-content card modal-lg">
-            <div class="modal-header">
-                <h2>Atualizar Preços de Mercado</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted" style="margin-bottom: 20px;">
-                    Informe o Preço Unitário atual dos títulos para calcular a marcação a mercado. 
-                    Você pode preencher manualmente ou fazer upload da planilha de resgate do Tesouro.
-                </p>
-                <div style="margin-bottom: 16px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--primary-color);">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Online: Buscar preços na API oficial do Tesouro</label>
-                    <button type="button" id="btn-fetch-market" class="btn btn-primary">
-                        <span id="btn-fetch-market-label">🔄 Buscar preços atuais</span>
-                    </button>
-                    <small class="text-muted" style="display: block; margin-top: 8px;">Consulta o preço unitário de resgate (PU de venda) de cada título diretamente no Tesouro Direto e preenche os campos abaixo.</small>
-                </div>
-                <div style="margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--card-border);">
-                    <label for="upload-excel" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Manual: Importar Planilha do Tesouro (Excel)</label>
-                    <input type="file" id="upload-excel" accept=".xlsx, .xls, .csv" style="border: none; padding: 0; background: transparent;">
-                    <small class="text-muted" style="display: block; margin-top: 8px;">Faz a leitura das colunas "Título" e "Preço unitário de resgate".</small>
-                </div>
-                <form id="form-update-market">
-                    <h3 style="margin-bottom: 16px; font-size: 1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">Preenchimento Manual / Conferência</h3>
-                    <div id="market-prices-container">
-                        <!-- Inputs gerados via JS -->
-                    </div>
-                    <div style="margin-top: 24px;">
-                        <button type="submit" class="btn btn-primary btn-block">Atualizar e Calcular</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- SheetJS CDN para ler Excel -->
+    <!-- Chart.js para gráficos e SheetJS para importar planilhas Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>
