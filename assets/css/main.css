@@ -74,6 +74,15 @@ body {
   min-height: 100vh;
 }
 
+/* O véu do menu mobile precisa ficar FORA do fluxo em qualquer largura de
+   tela: como filho direto de .app (grid de 2 colunas), uma div no fluxo
+   ocuparia a 1ª célula e empurraria sidebar/conteúdo de lugar no desktop. */
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(2, 6, 23, 0.55); z-index: 55;
+}
+.sidebar-overlay.show { display: block; }
+
 .sidebar {
   background: var(--bg-soft);
   border-right: 1px solid var(--border);
@@ -445,11 +454,6 @@ small.hint-text { color: var(--text-3); font-size: 11px; display: block; margin-
     box-shadow: var(--shadow);
   }
   .sidebar.open { transform: none; }
-  .sidebar-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(2, 6, 23, 0.55); z-index: 55;
-  }
-  .sidebar-overlay.show { display: block; }
   .burger {
     display: inline-flex; background: none; border: none;
     color: var(--text); cursor: pointer; padding: 4px;
