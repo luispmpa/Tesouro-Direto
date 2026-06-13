@@ -44,9 +44,12 @@ window.showToast = showToast; // acesso pelas páginas sem import circular
 // ---------------------------------------------------------------- router ---
 
 function navegar() {
-  const hash = location.hash.replace(/^#/, '') || '/';
-  const rota = ROUTES[hash] ? hash : '/';
+  // Suporta deep-link com parâmetros após o caminho: "#/tesouro?titulo=..."
+  const raw = location.hash.replace(/^#/, '') || '/';
+  const [caminho, queryStr] = raw.split('?');
+  const rota = ROUTES[caminho] ? caminho : '/';
   rotaAtual = rota;
+  const params = new URLSearchParams(queryStr || '');
 
   document.querySelectorAll('.nav-item').forEach((el) => {
     el.classList.toggle('active', el.dataset.route === rota);
@@ -58,7 +61,7 @@ function navegar() {
   const view = document.getElementById('view');
   view.innerHTML = '';
   try {
-    ROUTES[rota].render(view);
+    ROUTES[rota].render(view, params);
   } catch (err) {
     console.error(err);
     logErro('router', `Erro ao renderizar ${rota}: ${err.message}`);

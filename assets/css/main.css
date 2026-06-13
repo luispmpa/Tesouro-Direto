@@ -192,6 +192,21 @@ body {
 .section-title h2 { font-size: 15px; font-weight: 600; }
 .section-title .hint { font-size: 12px; color: var(--text-3); }
 
+/* -------------------------------------- elementos clicáveis (navegação) */
+
+.card-link { cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+.card-link:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.card-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.card-link.kpi::after {
+  content: '↗'; position: absolute; top: 11px; right: 13px;
+  font-size: 13px; color: var(--text-3); opacity: 0; transition: opacity 0.15s;
+}
+.card-link.kpi:hover::after { opacity: 1; }
+
+.row-link { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.row-link:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.row-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
 /* ------------------------------------------------------------------ badges */
 
 .badge {
