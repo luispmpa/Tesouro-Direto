@@ -7,9 +7,9 @@
 // de compra) e de RESGATE (PU e Rentabilidade Anual de venda). A "Rentabilidade
 // Anual" de RESGATE é a taxa atual de mercado usada na marcação a mercado.
 //
-// Estratégia de resiliência: chamada direta -> proxies CORS de fallback ->
-// último cache válido em localStorage. Cada busca bem-sucedida alimenta o
-// histórico diário de taxas (fin_td_rate_history).
+// Estratégia de resiliência: proxy do próprio Apps Script (sem CORS, quando
+// configurado) -> chamada direta -> proxies CORS públicos -> último cache válido
+// em localStorage. Cada busca bem-sucedida alimenta o histórico diário de taxas.
 
 import { load, save, KEYS } from './storage.js';
 import { logOk, logErro } from './logger.js';
@@ -17,11 +17,26 @@ import { logOk, logErro } from './logger.js';
 export const TESOURO_API_URL =
   'https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json';
 
-const FETCH_STRATEGIES = [
-  (url) => url,
-  (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
+// Monta a lista de estratégias de busca em ordem de preferência. Quando o
+// endpoint do Apps Script está configurado, ele entra na frente: roda no
+// servidor do Google (UrlFetchApp), então não sofre bloqueio de CORS e é a
+// fonte mais confiável. Os proxies públicos ficam como último recurso.
+function estrategiasFetch() {
+  const estrategias = [];
+  const bridge = load(KEYS.BRIDGE, { url: '', token: '' });
+  if (bridge && bridge.url) {
+    const sep = bridge.url.includes('?') ? '&' : '?';
+    const alvo = `${bridge.url}${sep}modulo=tesouro` +
+      (bridge.token ? `&token=${encodeURIComponent(bridge.token)}` : '');
+    estrategias.push({ nome: 'apps-script', build: () => alvo });
+  }
+  estrategias.push(
+    { nome: 'direto', build: (url) => url },
+    { nome: 'corsproxy', build: (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}` },
+    { nome: 'allorigins', build: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
+  );
+  return estrategias;
+}
 
 export function normalizeTituloKey(nome) {
   return (nome || '')
@@ -48,17 +63,20 @@ function parseBond(bd) {
 
 async function fetchRaw() {
   let lastError;
-  for (const wrap of FETCH_STRATEGIES) {
+  for (const estrategia of estrategiasFetch()) {
     try {
-      const resp = await fetch(wrap(TESOURO_API_URL), {
+      const resp = await fetch(estrategia.build(TESOURO_API_URL), {
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
+      // O proxy do Apps Script pode devolver { erro } (token, API fora do ar):
+      // nesse caso, cai para a próxima estratégia.
+      if (data && data.erro) throw new Error(data.erro);
       const list = data?.response?.TrsrBdTradgList || [];
       if (!list.length) throw new Error('Lista de títulos vazia');
-      return list;
+      return { list, via: estrategia.nome };
     } catch (err) {
       lastError = err;
     }
@@ -70,17 +88,18 @@ async function fetchRaw() {
 // em caso de falha lança erro (o chamador decide usar o cache via obterCache()).
 export async function atualizarTesouro() {
   try {
-    const list = await fetchRaw();
+    const { list, via } = await fetchRaw();
     const bonds = {};
     list.forEach((entry) => {
       const bd = entry?.TrsrBd;
       if (!bd || !bd.nm) return;
       bonds[normalizeTituloKey(bd.nm)] = parseBond(bd);
     });
-    const cache = { fetchedAt: Date.now(), bonds };
+    const cache = { fetchedAt: Date.now(), bonds, fonte: via };
     save(KEYS.TD_API_CACHE, cache);
     registrarHistorico(bonds);
-    logOk('tesouro-api', `${Object.keys(bonds).length} títulos atualizados na API oficial.`);
+    const rotuloFonte = via === 'apps-script' ? 'via sua planilha (Apps Script)' : `via ${via}`;
+    logOk('tesouro-api', `${Object.keys(bonds).length} títulos atualizados na API oficial (${rotuloFonte}).`);
     return cache;
   } catch (err) {
     logErro('tesouro-api', `Falha na consulta: ${err.message}. Usando último dado válido, se houver.`);

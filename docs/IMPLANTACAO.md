@@ -113,11 +113,18 @@ mostrar `✓ conectado` com a latência). A partir daí:
 GET {URL}?token=...&modulo=ping     → { ok, versao, geradoEm }
 GET {URL}?token=...&modulo=all      → { ibov, pgbl, alertas, logs, geradoEm }
 GET {URL}?token=...&modulo=ibov|pgbl|alertas|logs
+GET {URL}?token=...&modulo=tesouro  → JSON bruto da API do Tesouro (PU atual de resgate)
 GET {URL}?token=...&acao=importarAportesPGBL | verificarAlertas | atualizarTaxasTesouro
 ```
 
 Erros retornam `{ "erro": "..." }`. Sem `API_TOKEN` definido o endpoint fica
 aberto — **gere sempre o token**.
+
+> **`modulo=tesouro`** faz o Apps Script buscar a API oficial do Tesouro pelo
+> servidor do Google (sem CORS) e devolver o PU de resgate ao vivo (o "PU atual"
+> da marcação a mercado). O painel passa a usar esse caminho automaticamente
+> quando a conexão está configurada, sem precisar dos proxies públicos nem de
+> digitar preços à mão.
 
 ---
 
@@ -140,4 +147,4 @@ Siga o roteiro de [`CHECKLIST-VALIDACAO.md`](CHECKLIST-VALIDACAO.md). Resumo:
 | HTTP 302/HTML em vez de JSON | URL de */dev* ou deployment desatualizado | use a URL `/exec` do deployment ativo |
 | IBOV continua "snapshot" | endpoint não configurado ou aba com outro nome | conferir `CONFIG.ABA_IBOV` |
 | Importação PGBL não acha e-mails | filtro de busca | ajustar `CONFIG.GMAIL_BUSCA` |
-| API do Tesouro falha no site | CORS/instabilidade | o painel usa proxies e o último cache válido; tente "Atualizar API" mais tarde |
+| API do Tesouro falha no site (`Failed to fetch`) | CORS/proxies públicos instáveis | configure a conexão com o Apps Script: o painel passa a buscar o PU atual via `modulo=tesouro` (sem CORS) e só cai nos proxies como último recurso |

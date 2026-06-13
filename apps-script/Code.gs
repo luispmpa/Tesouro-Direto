@@ -50,7 +50,7 @@ var CONFIG = {
   // API oficial do Tesouro Direto (mesma fonte da página de rendimentos)
   TESOURO_API: 'https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json',
   HISTORICO_MAX_LINHAS: 20000,
-  VERSAO: '1.0.0'
+  VERSAO: '1.1.0'
 };
 
 /* ------------------------------------------------------------------- menu */
@@ -393,6 +393,9 @@ function doGet(e) {
     if (modulo === 'ping') {
       return json_({ ok: true, versao: CONFIG.VERSAO, geradoEm: new Date().toISOString() });
     }
+    // Proxy ao vivo da API do Tesouro (PU/Rentabilidade de resgate = PU atual),
+    // consumido pelo painel para a marcação a mercado sem depender de CORS.
+    if (modulo === 'tesouro') return json_(tesouroAoVivo_());
 
     var payload = { versao: CONFIG.VERSAO, geradoEm: new Date().toISOString() };
     if (modulo === 'all' || modulo === 'ibov') payload.ibov = lerIBOV_();
@@ -409,6 +412,19 @@ function doGet(e) {
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Proxy server-side da API oficial do Tesouro (sem restrição de CORS): devolve o
+// JSON BRUTO para o painel extrair PU/Rentabilidade de resgate (o "PU atual" da
+// marcação a mercado). Não escreve em aba — apenas repassa a cotação ao vivo.
+function tesouroAoVivo_() {
+  var resp = UrlFetchApp.fetch(CONFIG.TESOURO_API, { muteHttpExceptions: true, headers: { Accept: 'application/json' } });
+  if (resp.getResponseCode() !== 200) return { erro: 'API do Tesouro HTTP ' + resp.getResponseCode() };
+  try {
+    return JSON.parse(resp.getContentText());
+  } catch (err) {
+    return { erro: 'Resposta inválida da API do Tesouro.' };
+  }
 }
 
 function gerarTokenWebApp() {
