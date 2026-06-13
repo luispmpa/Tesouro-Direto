@@ -13,7 +13,13 @@ import { tabelaOrdenavel, graficoBarras, graficoLinha, abrirModal } from '../uti
 
 let filtroTitulo = 'Todos';
 
-export function renderTesouro(view) {
+export function renderTesouro(view, params) {
+  // Deep-link "#/tesouro?titulo=...": já abre filtrado pelo título informado.
+  const tituloParam = params?.get('titulo');
+  if (tituloParam) {
+    filtroTitulo = obterCarteira().some((p) => p.titulo === tituloParam) ? tituloParam : 'Todos';
+  }
+
   const { posicoes, totais, apiAtualizadaEm } = carteiraMarcada();
 
   view.innerHTML = `

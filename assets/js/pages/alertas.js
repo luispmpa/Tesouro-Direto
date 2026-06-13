@@ -20,7 +20,13 @@ import { abrirModal } from '../utils/ui.js';
 
 let filtroCategoria = 'todos';
 
-export function renderAlertas(view) {
+export function renderAlertas(view, params) {
+  // Deep-link "#/alertas?cat=...": já abre na categoria informada.
+  const catParam = params?.get('cat');
+  if (catParam && ['todos', 'acao', 'tesouro', 'atingidos'].includes(catParam)) {
+    filtroCategoria = catParam;
+  }
+
   const avaliacao = avaliarTudo();
   registrarDisparos(avaliacao);
 

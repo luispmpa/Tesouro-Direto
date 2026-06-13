@@ -74,6 +74,12 @@ export function tabelaOrdenavel(container, { colunas, linhas, vazio = 'Nenhum re
 
 const charts = new WeakMap();
 
+// Mostra cursor de "clicável" quando o ponteiro está sobre uma fatia/barra.
+function cursorAoSobrepor(evt, els) {
+  const alvo = evt?.native?.target;
+  if (alvo) alvo.style.cursor = els.length ? 'pointer' : 'default';
+}
+
 function montar(canvas, config) {
   if (typeof Chart === 'undefined') {
     canvas.replaceWith(Object.assign(document.createElement('div'), {
@@ -88,7 +94,7 @@ function montar(canvas, config) {
   return chart;
 }
 
-export function graficoRosca(canvas, labels, valores, formatador) {
+export function graficoRosca(canvas, labels, valores, formatador, { onSelect } = {}) {
   return montar(canvas, {
     type: 'doughnut',
     data: {
@@ -97,6 +103,8 @@ export function graficoRosca(canvas, labels, valores, formatador) {
     },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '64%',
+      onClick: onSelect ? (_evt, els) => { if (els.length) onSelect(els[0].index, labels[els[0].index]); } : undefined,
+      onHover: onSelect ? cursorAoSobrepor : undefined,
       plugins: {
         legend: { position: 'bottom', labels: { color: corTexto(), boxWidth: 11, padding: 14, font: { size: 11 } } },
         tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${formatador ? formatador(ctx.parsed) : ctx.parsed}` } },
@@ -105,7 +113,7 @@ export function graficoRosca(canvas, labels, valores, formatador) {
   });
 }
 
-export function graficoBarras(canvas, labels, datasets, { formatador, horizontal = false, stacked = false } = {}) {
+export function graficoBarras(canvas, labels, datasets, { formatador, horizontal = false, stacked = false, onSelect } = {}) {
   return montar(canvas, {
     type: 'bar',
     data: {
@@ -119,6 +127,8 @@ export function graficoBarras(canvas, labels, datasets, { formatador, horizontal
     options: {
       indexAxis: horizontal ? 'y' : 'x',
       responsive: true, maintainAspectRatio: false,
+      onClick: onSelect ? (_evt, els) => { if (els.length) onSelect(els[0].index, labels[els[0].index]); } : undefined,
+      onHover: onSelect ? cursorAoSobrepor : undefined,
       plugins: {
         legend: datasets.length > 1
           ? { position: 'bottom', labels: { color: corTexto(), boxWidth: 11, font: { size: 11 } } }
