@@ -388,7 +388,7 @@ function abrirModalMercado() {
       <div style="margin-bottom:14px;padding:14px;background:var(--bg-soft);border-radius:9px;border:1px dashed var(--primary)">
         <label style="color:var(--primary)">Online: API oficial do Tesouro Direto</label>
         <button type="button" id="btn-fetch-market" class="btn btn-primary btn-sm"><span id="btn-fetch-label">🔄 Buscar preços e taxas atuais</span></button>
-        <small class="hint-text">Consulta PU de venda e Rentabilidade Anual de resgate de cada título e preenche os campos abaixo.</small>
+        <small class="hint-text">Consulta o PU de venda (resgate) e a Rentabilidade Anual atual de cada título e preenche os campos abaixo. Com a conexão do Apps Script configurada, a busca passa pela sua planilha (sem bloqueio de CORS); senão, tenta direto e por proxies públicos.</small>
       </div>
       <div style="margin-bottom:18px;padding:14px;background:var(--bg-soft);border-radius:9px;border:1px dashed var(--border-strong)">
         <label for="upload-excel" style="color:var(--primary)">Manual: importar planilha do Tesouro (Excel)</label>

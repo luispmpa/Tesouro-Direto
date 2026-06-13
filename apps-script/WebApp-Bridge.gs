@@ -29,7 +29,7 @@ var PAINEL_CONFIG = {
   ABA_LOGS: 'Logs',                 // opcional; se não existir, retorna vazio
   ABA_TAXAS: 'TaxasTD_Historico',   // criada sob demanda por painel_atualizarTaxasTesouro
   TESOURO_API: 'https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json',
-  VERSAO: '1.0.0-bridge'
+  VERSAO: '1.1.0-bridge'
 };
 
 /* ----------------------------------------------------------------- Web App */
@@ -45,6 +45,9 @@ function doGet(e) {
     if (modulo === 'ping') {
       return painel_json_({ ok: true, versao: PAINEL_CONFIG.VERSAO, geradoEm: new Date().toISOString() });
     }
+    // Proxy ao vivo da API do Tesouro (PU/Rentabilidade de resgate = PU atual),
+    // consumido pelo painel para a marcação a mercado sem depender de CORS.
+    if (modulo === 'tesouro') return painel_json_(painel_tesouroAoVivo_());
     var out = { versao: PAINEL_CONFIG.VERSAO, geradoEm: new Date().toISOString() };
     if (modulo === 'all' || modulo === 'ibov') out.ibov = painel_lerIBOV_();
     if (modulo === 'all' || modulo === 'pgbl') out.pgbl = painel_lerPGBL_();
@@ -210,6 +213,22 @@ function painel_lerLogs_() {
   return dados.map(function (l) {
     return { quando: String(l[0] || ''), origem: String(l[1] || 'script'), status: String(l[2] || ''), mensagem: String(l[3] || '') };
   });
+}
+
+/* --------- PU atual ao vivo: proxy server-side da API do Tesouro ---------- */
+
+// Busca a API oficial do Tesouro pelo servidor do Google (UrlFetchApp), que não
+// sofre bloqueio de CORS, e devolve o JSON BRUTO. O painel extrai dele o PU e a
+// Rentabilidade de resgate (o "PU atual" da marcação a mercado). Não escreve em
+// nenhuma aba — é só um repassador confiável da cotação.
+function painel_tesouroAoVivo_() {
+  var resp = UrlFetchApp.fetch(PAINEL_CONFIG.TESOURO_API, { muteHttpExceptions: true, headers: { Accept: 'application/json' } });
+  if (resp.getResponseCode() !== 200) return { erro: 'API do Tesouro HTTP ' + resp.getResponseCode() };
+  try {
+    return JSON.parse(resp.getContentText());
+  } catch (err) {
+    return { erro: 'Resposta inválida da API do Tesouro.' };
+  }
 }
 
 /* ----------------- taxas do Tesouro (opcional, só se você acionar) -------- */
