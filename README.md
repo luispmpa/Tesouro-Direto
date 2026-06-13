@@ -16,7 +16,7 @@ web profissional, organizado por módulos.
 | Rota | Módulo | O que faz |
 |---|---|---|
 | `#/` | **Dashboard** | patrimônio, investido, bruto/líquido a mercado, rentabilidade, distribuição (tipo/indexador/vencimento), alertas ativos e status dos robôs |
-| `#/tesouro` | **Tesouro Direto** | carteira completa com **marcação a mercado** (PU e taxa de **resgate** oficiais), IR regressivo, taxa B3, Δ taxa contratada × atual, simulador *vender hoje × manter até o vencimento*, CRUD de aportes, importação da planilha de resgate, backups |
+| `#/tesouro` | **Tesouro Direto** | carteira completa com **marcação a mercado** (PU e taxa de **resgate** oficiais), IR regressivo, taxa B3, Δ taxa contratada × atual, simulador *vender hoje × manter até o vencimento*, CRUD de aportes, atualização de cada título por Extrato Analítico Excel sem duplicatas, importação da planilha de resgate, backups |
 | `#/ibov` | **IBOV / Ações** | carteira teórica do índice com variações (dia/semana/mês/6m/12m), busca, ordenação e top altas/baixas — ao vivo via planilha (GOOGLEFINANCE) quando conectado |
 | `#/pgbl` | **Previdência PGBL** | limite de 12%, meta anual, economia de IR, matriz de aportes mensais (importados do **Gmail** pelo Apps Script), projeções |
 | `#/alertas` | **Alertas** | as 34 regras migradas da planilha + alertas de taxa do Tesouro, vencimento, meta PGBL e saúde dos dados; histórico de disparos; e-mail continua no Apps Script |

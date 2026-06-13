@@ -10,6 +10,7 @@ import {
 import { atualizarTesouro, obterCache, dadosDoTitulo, obterHistoricoTaxas } from '../services/tesouroApi.js';
 import { fmtBRL, fmtNum, fmtPct, sinal, classeSinal, fmtDataBR, fmtDataHoraBR, esc } from '../utils/format.js';
 import { tabelaOrdenavel, graficoBarras, graficoLinha, abrirModal } from '../utils/ui.js';
+import { mesmoTituloExtrato, parseExtratoAnalitico, reconciliarExtratoTitulo } from '../utils/tesouroExtrato.js';
 
 let filtroTitulo = 'Todos';
 
@@ -35,6 +36,8 @@ export function renderTesouro(view, params) {
       <h2>Resumo por título</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" id="btn-atualizar-mercado">⟳ Atualizar mercado</button>
+        <button class="btn btn-secondary btn-sm" id="btn-importar-extrato">⬆ ${filtroTitulo === 'Todos' ? 'Importar extrato de título' : 'Atualizar este título via Excel'}</button>
+        <input type="file" id="extrato-file" accept=".xlsx,.xls" hidden>
         <button class="btn btn-primary btn-sm" id="btn-novo-aporte">+ Novo aporte</button>
       </div>
     </div>
@@ -369,6 +372,79 @@ function rerenderPagina() {
   if (view) renderTesouro(view);
 }
 
+// ------------------------------------------ importar extrato por título ----
+
+async function importarExtratoArquivo(file) {
+  if (typeof XLSX === 'undefined') {
+    throw new Error('O leitor de Excel não está disponível. Recarregue a página e tente novamente.');
+  }
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+  if (!ws) throw new Error('A planilha não possui uma aba legível.');
+
+  const linhas = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+  const extrato = parseExtratoAnalitico(linhas);
+  if (filtroTitulo !== 'Todos' && !mesmoTituloExtrato(extrato.titulo, filtroTitulo)) {
+    throw new Error(`O arquivo é de "${extrato.titulo}", mas o título selecionado é "${filtroTitulo}".`);
+  }
+
+  const carteira = obterCarteira();
+  const tituloExistente = carteira.find((item) => mesmoTituloExtrato(item.titulo, extrato.titulo))?.titulo;
+  const tituloDestino = filtroTitulo === 'Todos' ? (tituloExistente || extrato.titulo) : filtroTitulo;
+  const resultado = reconciliarExtratoTitulo(carteira, extrato, { tituloDestino, gerarId: generateId });
+  abrirPreviaExtrato(resultado, extrato.aplicacoes.length);
+}
+
+function abrirPreviaExtrato(resultado, totalAplicacoes) {
+  const { resumo, portfolio } = resultado;
+  const semAlteracoes = resumo.alteracoes === 0;
+  const avisoRemocao = resumo.removidos > 0
+    ? `<p class="notice warn mt"><strong>Atenção:</strong> ${resumo.removidos} aporte(s) atual(is) não aparecem no arquivo e serão removidos deste título.</p>`
+    : '';
+  const avisoVazio = totalAplicacoes === 0
+    ? '<p class="notice warn mt"><strong>Extrato sem aplicações:</strong> ao confirmar, este título ficará sem posições na carteira.</p>'
+    : '';
+
+  abrirModal({
+    titulo: 'Conferir atualização do extrato',
+    corpoHTML: `
+      <p class="text-muted" style="margin-bottom:14px">O arquivo será usado como o estado atual de <strong>${esc(resumo.titulo)}</strong>. Os demais títulos não serão alterados.</p>
+      <div class="import-summary">
+        ${resumoImportacao('Na carteira', resumo.existentes)}
+        ${resumoImportacao('No arquivo', resumo.recebidos)}
+        ${resumoImportacao('Sem alteração', resumo.inalterados, 'pos')}
+        ${resumoImportacao('Atualizados', resumo.atualizados, 'info')}
+        ${resumoImportacao('Novos', resumo.adicionados, 'pos')}
+        ${resumoImportacao('Removidos', resumo.removidos, resumo.removidos ? 'neg' : '')}
+      </div>
+      ${semAlteracoes ? '<p class="notice mt"><strong>Nenhuma alteração encontrada.</strong> Reenviar o mesmo arquivo não duplica os aportes.</p>' : ''}
+      ${avisoRemocao}
+      ${avisoVazio}
+      <button type="button" class="btn btn-primary btn-block mt" id="btn-confirmar-extrato" ${semAlteracoes ? 'disabled' : ''}>
+        ${semAlteracoes ? 'Carteira já sincronizada' : 'Aplicar atualização'}
+      </button>`,
+    aoMontar(modal, fechar) {
+      modal.querySelector('#btn-confirmar-extrato').addEventListener('click', () => {
+        salvarCarteira(portfolio);
+        filtroTitulo = resumo.recebidos > 0 ? resumo.titulo : 'Todos';
+        fechar();
+        window.showToast(
+          `Extrato atualizado: ${resumo.adicionados} novo(s), ${resumo.atualizados} atualizado(s) e ${resumo.removidos} removido(s).`,
+          'success',
+          6000
+        );
+        rerenderPagina();
+      });
+    },
+  });
+}
+
+const resumoImportacao = (rotulo, valor, classe = '') => `
+  <div class="import-summary-item">
+    <span>${rotulo}</span>
+    <strong class="${classe}">${valor}</strong>
+  </div>`;
+
 // -------------------------------------------- modal atualizar mercado ------
 
 function abrirModalMercado() {
@@ -497,6 +573,21 @@ function abrirModalMercado() {
 function ligarAcoes(view) {
   view.querySelector('#btn-novo-aporte').addEventListener('click', () => abrirFormAporte());
   view.querySelector('#btn-atualizar-mercado').addEventListener('click', abrirModalMercado);
+
+  const extratoFile = view.querySelector('#extrato-file');
+  view.querySelector('#btn-importar-extrato').addEventListener('click', () => extratoFile.click());
+  extratoFile.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await importarExtratoArquivo(file);
+    } catch (err) {
+      console.error(err);
+      window.showToast(err?.message || 'Não foi possível importar o extrato.', 'error', 7000);
+    } finally {
+      extratoFile.value = '';
+    }
+  });
 
   view.querySelector('#btn-export').addEventListener('click', () => {
     const backup = {

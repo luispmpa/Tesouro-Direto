@@ -382,6 +382,20 @@ small.hint-text { color: var(--text-3); font-size: 11px; display: block; margin-
 .summary-card .t { font-size: 11px; color: var(--text-2); font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 .summary-card .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
+.import-summary {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.import-summary-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; background: var(--bg-soft);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-2); font-size: 12px;
+}
+.import-summary-item strong { color: var(--text); font-size: 15px; }
+.import-summary-item strong.pos { color: var(--pos); }
+.import-summary-item strong.neg { color: var(--neg); }
+.import-summary-item strong.info { color: var(--info); }
+
 /* ------------------------------------------------------------------- misc */
 
 .chart-box { position: relative; height: 280px; }

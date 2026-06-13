@@ -22,6 +22,7 @@
 |---|---|---|
 | App antigo | CRUD de aportes com máscara de data e autocomplete | `#/tesouro` (modal) |
 | App antigo | Atualizar mercado: API oficial / upload .xlsx / manual | `#/tesouro` (modal Atualizar mercado) |
+| — novo | Atualizar os aportes de um título pelo Extrato Analítico Excel, sem duplicar reenvios | `#/tesouro` (quadrante do título ou visão Todos) |
 | App antigo | Exportar/importar backup JSON da carteira (formato compatível) | `#/tesouro` |
 | App antigo | Restaurar dados iniciais | `#/tesouro` |
 | App antigo | Filtro por título, ordenação, cards de resumo, toasts | `#/tesouro` |
@@ -43,6 +44,7 @@
 - [ ] Dashboard mostra KPIs coerentes com a carteira seed (98 aportes).
 - [ ] "Atualizar" (topo) busca a API do Tesouro; tabela exibe badges `API` e Δtaxa.
 - [ ] Criar/editar/excluir aporte funciona e sobrevive a F5.
+- [ ] Selecionar um título → importar seu Extrato Analítico → prévia mostra novos/atualizados/removidos; reenviar o mesmo arquivo não duplica aportes.
 - [ ] Upload da planilha de resgate preenche os PUs.
 - [ ] Simulador (ícone de gráfico na linha) mostra vender hoje × manter, com metodologia.
 - [ ] Alertas: pausar/reativar, criar (ação e taxa TD), histórico registra disparos.

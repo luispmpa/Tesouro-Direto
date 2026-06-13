@@ -1,0 +1,8 @@
+{
+  "name": "tesouro-direto-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/tesouroExtrato.test.mjs"
+  }
+}
