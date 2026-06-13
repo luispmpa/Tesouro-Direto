@@ -1,7 +1,8 @@
 // Módulo Tesouro Direto — carteira completa com marcação a mercado, CRUD de
 // aportes (preservado do app original), atualização de preços (API oficial,
-// planilha Excel ou manual), simulação de venda antecipada vs. vencimento e
-// gráficos por título/vencimento/indexador.
+// planilha Excel ou manual), atualização de uma classe inteira pelo Extrato
+// Analítico (.xlsx) do Tesouro — sem duplicar aportes —, simulação de venda
+// antecipada vs. vencimento e gráficos por título/vencimento/indexador.
 
 import {
   carteiraMarcada, agruparPosicoes, obterCarteira, salvarCarteira,
@@ -35,9 +36,11 @@ export function renderTesouro(view, params) {
       <h2>Resumo por título</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" id="btn-atualizar-mercado">⟳ Atualizar mercado</button>
+        ${filtroTitulo !== 'Todos' ? `<button class="btn btn-secondary btn-sm" id="btn-upload-titulo">⬆ Atualizar via Excel</button>` : ''}
         <button class="btn btn-primary btn-sm" id="btn-novo-aporte">+ Novo aporte</button>
       </div>
     </div>
+    <p class="text-muted" style="margin:-6px 0 10px">Clique em um título para filtrar; use <strong>⬆</strong> no card (ou o botão acima) para atualizar essa classe pelo Extrato Analítico (Excel) do Tesouro.</p>
     <div class="summary-cards" id="cards-titulos"></div>
 
     <div class="section-title">
@@ -93,19 +96,27 @@ const kpi = (titulo, valor, sub = '') => `
 
 // --------------------------------------------------------------- cards -----
 
+const ICONE_UPLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>';
+
 function montarCards(view, posicoes, totais) {
   const box = view.querySelector('#cards-titulos');
   const grupos = agruparPosicoes(posicoes, 'titulo');
-  const card = (id, titulo, valor, ativo) => `
+  const card = (id, titulo, valor, ativo, comUpload) => `
     <div class="summary-card ${ativo ? 'active' : ''}" data-filtro="${esc(id)}">
-      <span class="t" title="${esc(titulo)}">${esc(titulo)}</span>
+      <div class="summary-card-head">
+        <span class="t" title="${esc(titulo)}">${esc(titulo)}</span>
+        ${comUpload ? `<button type="button" class="summary-upload" data-upload="${esc(id)}"
+          title="Atualizar ${esc(titulo)} via Excel" aria-label="Atualizar ${esc(titulo)} via Excel">${ICONE_UPLOAD}</button>` : ''}
+      </div>
       <span class="v">${valor}</span>
     </div>`;
   box.innerHTML =
-    card('Todos', 'Todos os títulos', fmtBRL(totais.bruto), filtroTitulo === 'Todos') +
-    grupos.map((g) => card(g.chave, g.chave, fmtBRL(g.bruto), filtroTitulo === g.chave)).join('');
+    card('Todos', 'Todos os títulos', fmtBRL(totais.bruto), filtroTitulo === 'Todos', false) +
+    grupos.map((g) => card(g.chave, g.chave, fmtBRL(g.bruto), filtroTitulo === g.chave, true)).join('');
   box.querySelectorAll('.summary-card').forEach((el) => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      const upload = e.target.closest('[data-upload]');
+      if (upload) { e.stopPropagation(); abrirModalUploadTitulo(upload.dataset.upload); return; }
       filtroTitulo = el.dataset.filtro;
       renderTesouro(view.closest('#view') || view);
     });
@@ -492,11 +503,191 @@ function abrirModalMercado() {
   });
 }
 
+// ------------------------------ atualizar título por Extrato Analítico -----
+
+// Converte número em formato brasileiro ("3.159,78", "0,05") ou já numérico.
+function parseNumeroBR(v) {
+  if (typeof v === 'number') return v;
+  if (v == null) return NaN;
+  let s = String(v).trim().replace(/R\$\s*/gi, '').replace(/%/g, '').replace(/\s+/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); // ponto = milhar, vírgula = decimal
+  return parseFloat(s);
+}
+
+// Lê o "Extrato Analítico" (.xlsx/.xls) do Tesouro Direto de UM título e devolve
+// { titulo, vencimento, aportes:[{dataAplicacao, quantidade, precoUnitario, valorInvestido, taxaContratada}] }.
+function parseExtratoTesouro(arrayBuffer) {
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+  const linhas = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
+
+  let titulo = '';
+  let vencimento = '';
+  linhas.forEach((row) => {
+    const c0 = row && row[0] != null ? String(row[0]).trim() : '';
+    if (!titulo) {
+      const m = /EXTRATO\s+ANAL[IÍ]TICO\s*[-–—]\s*(.+)/i.exec(c0);
+      if (m) titulo = m[1].trim();
+    }
+    if (!vencimento) {
+      const mv = /VENCIMENTO\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(c0);
+      if (mv) vencimento = mv[1];
+    }
+  });
+
+  const aportes = [];
+  linhas.forEach((row) => {
+    if (!row) return;
+    const data = row[0] != null ? String(row[0]).trim() : '';
+    // Só as linhas de aporte têm a data dd/mm/aaaa na 1ª coluna (pula cabeçalho, "Total" e notas).
+    if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(data)) return;
+    const quantidade = parseNumeroBR(row[1]);
+    const precoUnitario = parseNumeroBR(row[2]);
+    const valorBruto = parseNumeroBR(row[3]);
+    const taxaContratada = row[4] != null ? String(row[4]).trim() : '';
+    if (!Number.isFinite(quantidade) || quantidade <= 0 || !Number.isFinite(precoUnitario) || precoUnitario <= 0) return;
+    aportes.push({
+      dataAplicacao: data,
+      quantidade,
+      precoUnitario,
+      valorInvestido: Number.isFinite(valorBruto) ? valorBruto : r2(quantidade * precoUnitario),
+      taxaContratada,
+    });
+  });
+
+  return { titulo, vencimento, aportes };
+}
+
+// Sincroniza a classe `tituloAlvo` com os aportes do Excel, SEM duplicar: mantém os
+// inalterados (preservando o id), adiciona os novos e remove os que sumiram da planilha.
+function calcularAtualizacaoTitulo(tituloAlvo, aportes) {
+  const carteira = obterCarteira();
+  const chaveDe = (a) => [
+    String(a.dataAplicacao || '').trim(),
+    r2(Number(a.quantidade)),
+    r2(Number(a.precoUnitario)),
+    String(a.taxaContratada || '').trim(),
+  ].join('|');
+
+  const outros = carteira.filter((p) => p.titulo !== tituloAlvo);
+  const filas = new Map(); // chave -> [aportes existentes] (atende repetições idênticas)
+  carteira.filter((p) => p.titulo === tituloAlvo).forEach((p) => {
+    const k = chaveDe(p);
+    if (!filas.has(k)) filas.set(k, []);
+    filas.get(k).push(p);
+  });
+
+  let adicionados = 0;
+  let mantidos = 0;
+  const novosDoTitulo = aportes.map((a) => {
+    const registro = {
+      titulo: tituloAlvo,
+      dataAplicacao: a.dataAplicacao,
+      quantidade: a.quantidade,
+      precoUnitario: a.precoUnitario,
+      valorInvestido: a.valorInvestido,
+      taxaContratada: a.taxaContratada,
+    };
+    const fila = filas.get(chaveDe(a));
+    if (fila && fila.length) {
+      mantidos++;
+      return { ...fila.shift(), ...registro }; // preserva o id do existente
+    }
+    adicionados++;
+    return { id: generateId(), ...registro };
+  });
+
+  let removidos = 0;
+  filas.forEach((fila) => { removidos += fila.length; });
+
+  return { lista: [...outros, ...novosDoTitulo], adicionados, mantidos, removidos, total: novosDoTitulo.length };
+}
+
+function abrirModalUploadTitulo(tituloAlvo) {
+  abrirModal({
+    titulo: `Atualizar via Excel — ${tituloAlvo}`,
+    large: true,
+    corpoHTML: `
+      <p class="text-muted" style="margin-bottom:16px">
+        Envie o <strong>Extrato Analítico</strong> (Excel) deste título, exportado do site do Tesouro Direto.
+        O sistema substitui os aportes de <strong>${esc(tituloAlvo)}</strong> pelos da planilha — adiciona os novos,
+        remove os que não constam mais e mantém os inalterados, <strong>sem duplicar</strong>.</p>
+      <div style="margin-bottom:14px;padding:14px;background:var(--bg-soft);border-radius:9px;border:1px dashed var(--primary)">
+        <label for="upload-extrato" style="color:var(--primary)">Arquivo do Extrato Analítico (.xlsx, .xls)</label>
+        <input type="file" id="upload-extrato" accept=".xlsx, .xls">
+        <small class="hint-text">Lê "Data da aplicação", "Quantidade", "Preço na aplicação", "Valor investido" e "Rentabilidade contratada".</small>
+      </div>
+      <div id="extrato-preview"></div>
+      <button type="button" class="btn btn-primary btn-block" id="btn-aplicar-extrato" style="margin-top:14px" disabled>Aplicar atualização</button>`,
+    aoMontar(modal, fechar) {
+      let pronto = null; // { tituloEfetivo, aportes }
+      const preview = modal.querySelector('#extrato-preview');
+      const btnAplicar = modal.querySelector('#btn-aplicar-extrato');
+
+      modal.querySelector('#upload-extrato').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        pronto = null;
+        btnAplicar.disabled = true;
+        preview.innerHTML = '';
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const { titulo, vencimento, aportes } = parseExtratoTesouro(evt.target.result);
+            if (!aportes.length) {
+              preview.innerHTML = `<p class="notice warn">Nenhum aporte reconhecido. Confirme que é o <strong>Extrato Analítico</strong> do Tesouro Direto (.xlsx).</p>`;
+              return;
+            }
+            const tituloEfetivo = titulo || tituloAlvo;
+            const diff = calcularAtualizacaoTitulo(tituloEfetivo, aportes);
+            const aviso = (titulo && titulo !== tituloAlvo)
+              ? `<p class="notice warn" style="margin-bottom:10px">⚠ A planilha é do título <strong>${esc(titulo)}</strong>, diferente do card aberto (<strong>${esc(tituloAlvo)}</strong>). Ao aplicar, <strong>${esc(titulo)}</strong> será atualizado.</p>`
+              : '';
+            preview.innerHTML = `
+              ${aviso}
+              <div class="notice">
+                <strong>${esc(tituloEfetivo)}</strong>${vencimento ? ` · vencimento ${esc(vencimento)}` : ''}<br>
+                Planilha com <strong>${aportes.length}</strong> aporte(s). Após aplicar:
+                <ul style="margin:8px 0 0 18px;line-height:1.7">
+                  <li><span class="pos">+${diff.adicionados}</span> novo(s)</li>
+                  <li><span class="neg">−${diff.removidos}</span> removido(s) (ausentes na planilha)</li>
+                  <li>${diff.mantidos} mantido(s) sem alteração</li>
+                </ul>
+                <span class="hint-text" style="margin-top:8px">A classe ficará com ${diff.total} aporte(s) no total.</span>
+              </div>`;
+            pronto = { tituloEfetivo, aportes };
+            btnAplicar.disabled = false;
+          } catch (err) {
+            console.error(err);
+            preview.innerHTML = `<p class="notice warn">Erro ao ler o arquivo. Envie um Extrato Analítico válido (.xlsx).</p>`;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnAplicar.addEventListener('click', () => {
+        if (!pronto) return;
+        const res = calcularAtualizacaoTitulo(pronto.tituloEfetivo, pronto.aportes);
+        salvarCarteira(res.lista);
+        filtroTitulo = pronto.tituloEfetivo;
+        fechar();
+        window.showToast(
+          `${pronto.tituloEfetivo} atualizado: +${res.adicionados} novo(s), −${res.removidos} removido(s), ${res.mantidos} mantido(s).`,
+          'success', 6000);
+        rerenderPagina();
+      });
+    },
+  });
+}
+
 // ------------------------------------------------------ backup/restore -----
 
 function ligarAcoes(view) {
   view.querySelector('#btn-novo-aporte').addEventListener('click', () => abrirFormAporte());
   view.querySelector('#btn-atualizar-mercado').addEventListener('click', abrirModalMercado);
+  const btnUploadTitulo = view.querySelector('#btn-upload-titulo');
+  if (btnUploadTitulo) btnUploadTitulo.addEventListener('click', () => abrirModalUploadTitulo(filtroTitulo));
 
   view.querySelector('#btn-export').addEventListener('click', () => {
     const backup = {

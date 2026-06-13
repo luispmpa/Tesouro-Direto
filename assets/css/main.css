@@ -381,6 +381,14 @@ small.hint-text { color: var(--text-3); font-size: 11px; display: block; margin-
 .summary-card.active { border-color: var(--primary); background: var(--info-bg); }
 .summary-card .t { font-size: 11px; color: var(--text-2); font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 .summary-card .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.summary-card-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.summary-card-head .t { flex: 1; min-width: 0; max-width: none; }
+.summary-upload {
+  background: transparent; border: none; cursor: pointer; flex-shrink: 0;
+  color: var(--text-3); padding: 3px; border-radius: 6px; display: inline-flex; line-height: 0;
+}
+.summary-upload:hover { color: var(--primary); background: var(--surface-2); }
+.summary-upload svg { width: 14px; height: 14px; }
 
 /* ------------------------------------------------------------------- misc */
 
