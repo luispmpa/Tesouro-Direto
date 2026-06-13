@@ -11,7 +11,7 @@ import {
   obterConfig, salvarConfig, configurado, diagnosticar, sincronizar,
   executarAcao, obterCacheBridge,
 } from '../services/sheetsBridge.js';
-import { atualizarTesouro, obterCache, obterHistoricoTaxas, TESOURO_API_URL } from '../services/tesouroApi.js';
+import { obterCache, obterHistoricoTaxas } from '../services/tesouroApi.js';
 import { obterLogs, limparLogs, logOk, logErro } from '../services/logger.js';
 import { load, save, KEYS } from '../services/storage.js';
 import { fmtDataHoraBR, tempoRelativo, fmtNum, esc } from '../utils/format.js';
@@ -30,15 +30,15 @@ export function renderDados(view) {
 
   view.innerHTML = `
     <section class="grid grid-kpi">
-      ${statusCard('API do Tesouro Direto', Boolean(apiCache),
-        apiCache ? `última consulta ${tempoRelativo(apiCache.fetchedAt)}` : 'nenhuma consulta ainda',
-        apiCache ? `${Object.keys(apiCache.bonds).length} títulos em cache` : 'dados oficiais de investimento/resgate')}
+      ${statusCard('Preços do Tesouro (manuais)', Boolean(apiCache),
+        apiCache ? `atualizados ${tempoRelativo(apiCache.fetchedAt)}` : 'ainda não informados',
+        apiCache ? `${Object.keys(apiCache.bonds).length} título(s) com PU/taxa de resgate` : 'informe em Tesouro Direto › Atualizar preços')}
       ${statusCard('Apps Script (planilha)', configurado() && Boolean(bridge),
         configurado() ? (bridge ? `sincronizado ${tempoRelativo(bridge.fetchedAt)}` : 'configurado, sem sincronização') : 'não configurado',
         'Gmail PGBL · alertas por e-mail · IBOV ao vivo')}
       ${statusCard('Histórico de taxas TD', hist.length >= 2,
         hist.length ? `${hist.length} dia(s) de amostras` : 'ainda vazio',
-        'uma amostra por dia a cada atualização')}
+        'uma amostra por dia a cada atualização manual')}
       ${statusCard('Erros recentes', erros.length === 0,
         erros.length ? `${erros.length} erro(s) no log` : 'nenhum erro registrado',
         erros.length ? esc((erros[0].mensagem || '').slice(0, 60)) : 'tudo operando normalmente', !erros.length)}
@@ -46,22 +46,21 @@ export function renderDados(view) {
 
     <div class="section-title"><h2>Última atualização por módulo</h2></div>
     <div class="card" style="padding:10px 16px">
-      ${linhaStatus('Taxas e PUs do Tesouro (API oficial)', Boolean(apiCache), apiCache?.fetchedAt, esc(TESOURO_API_URL))}
+      ${linhaStatus('Preços e taxas do Tesouro', Boolean(apiCache), apiCache?.fetchedAt, 'atualização manual em Tesouro Direto (digitada ou importada)')}
       ${linhaStatus('Planilha (IBOV, PGBL, alertas, logs)', Boolean(bridge), bridge?.fetchedAt, configurado() ? 'via Web App do Apps Script' : 'endpoint não configurado')}
       ${linhaStatus('Cotações IBOV', fontes.ibov.fonte !== 'seed', fontes.ibov.atualizadoEm, fontes.ibov.fonte === 'seed' ? 'snapshot estático da auditoria (26/05/2026)' : 'GOOGLEFINANCE na planilha')}
     </div>
 
-    <div class="section-title"><h2>Atualização manual e robôs</h2></div>
+    <div class="section-title"><h2>Sincronização e robôs da planilha</h2></div>
     <div class="card">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" id="btn-api-agora">⟳ Atualizar API do Tesouro agora</button>
         <button class="btn btn-secondary btn-sm" id="btn-sync-agora" ${configurado() ? '' : 'disabled title="Configure o endpoint abaixo"'}>⟳ Sincronizar planilha agora</button>
         <button class="btn btn-secondary btn-sm" data-acao="importarAportesPGBL" ${configurado() ? '' : 'disabled'}>▶ importarAportesPGBL()</button>
         <button class="btn btn-secondary btn-sm" data-acao="verificarAlertas" ${configurado() ? '' : 'disabled'}>▶ verificarAlertas()</button>
-        <button class="btn btn-secondary btn-sm" data-acao="atualizarTaxasTesouro" ${configurado() ? '' : 'disabled'}>▶ atualizarTaxasTesouro()</button>
       </div>
       <p class="text-muted mt">As funções ▶ executam no Apps Script da planilha (Gmail, e-mail e GOOGLEFINANCE
-        exigem o ambiente Google). Os gatilhos automáticos continuam valendo — estes botões só antecipam a execução.</p>
+        exigem o ambiente Google). Os gatilhos automáticos continuam valendo — estes botões só antecipam a execução.
+        Os preços do Tesouro são atualizados manualmente na página <a href="#/tesouro" style="color:var(--primary)">Tesouro Direto</a>.</p>
     </div>
 
     <div class="section-title"><h2>Conexão com o Apps Script (Web App)</h2></div>
@@ -85,7 +84,7 @@ export function renderDados(view) {
         repositório público. Passo a passo de publicação em <code>docs/IMPLANTACAO.md</code> (código em <code>apps-script/Code.gs</code>).</p>
     </div>
 
-    <div class="section-title"><h2>Premissas de cálculo</h2><span class="hint">usadas nas projeções "manter até o vencimento"</span></div>
+    <div class="section-title"><h2>Premissas de cálculo</h2><span class="hint">usadas só nas projeções "manter até o vencimento"</span></div>
     <div class="card">
       <div class="inline-form">
         <div class="form-group">
@@ -98,7 +97,15 @@ export function renderDados(view) {
         </div>
         <button class="btn btn-primary btn-sm" id="btn-salvar-premissas">Salvar premissas</button>
       </div>
-      <p class="text-muted mt">Metodologia da marcação a mercado e das projeções em <code>docs/MARCACAO-A-MERCADO.md</code>.</p>
+      <p class="notice mt">
+        <strong>De onde vêm esses valores?</strong> São <strong>premissas suas</strong>, não dados de fonte
+        automática. Os padrões (IPCA <strong>4,5% a.a.</strong> e Selic <strong>12% a.a.</strong>) são apenas
+        estimativas iniciais — ajuste para a sua expectativa de inflação e juros futuros.
+      </p>
+      <p class="text-muted mt">
+        Eles entram <strong>somente</strong> na projeção "manter até o vencimento" de IPCA+/Renda+/Educa+ (usa o IPCA)
+        e de Selic (usa a Selic). <strong>Não afetam</strong> a marcação a mercado atual, que usa o PU de resgate
+        informado por você. Metodologia completa em <code>docs/MARCACAO-A-MERCADO.md</code>.</p>
     </div>
 
     <div class="section-title">
@@ -181,17 +188,6 @@ function ligarEventos(view) {
       filtroLog = c.dataset.log;
       renderDados(view);
     });
-  });
-
-  view.querySelector('#btn-api-agora').addEventListener('click', async (e) => {
-    e.target.disabled = true;
-    try {
-      await atualizarTesouro();
-      window.showToast('Taxas do Tesouro atualizadas.', 'success');
-    } catch (err) {
-      window.showToast('API indisponível: ' + err.message + '. Mantido o último dado válido.', 'error', 6000);
-    }
-    renderDados(view);
   });
 
   const btnSync = view.querySelector('#btn-sync-agora');

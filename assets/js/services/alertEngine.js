@@ -16,6 +16,7 @@ import { ALERTAS_SEED, mapaCotacoes, carteiraMarcada, obterPGBL, totalAportadoAn
 import { obterCache, dadosDoTitulo } from './tesouroApi.js';
 import { calcularPainelPGBL } from '../utils/finance.js';
 import { logInfo } from './logger.js';
+import { enviarAlertas, configurado } from './sheetsBridge.js';
 
 export const TIPOS_ACAO = ['Preço acima', 'Preço abaixo', 'Variação ≥', 'Variação ≤'];
 export const BASES_VARIACAO = ['Hoje', '7 dias', '30 dias'];
@@ -44,11 +45,24 @@ export function obterAlertas() {
 export function salvarAlertas(alertas) {
   save(KEYS.ALERTS, alertas);
   document.dispatchEvent(new CustomEvent('app:alertas-alterados'));
+  // Reflete a configuração na planilha do Drive (quando conectada) — melhor
+  // esforço: nunca bloqueia nem reverte a alteração local se a rede falhar.
+  if (configurado()) {
+    enviarAlertas(alertas).catch(() => { /* erro já logado em sheetsBridge */ });
+  }
 }
 
 export function adicionarAlerta(alerta) {
   const alertas = obterAlertas();
   alertas.push({ id: 'al-' + Date.now().toString(36), status: 'Ativo', ...alerta });
+  salvarAlertas(alertas);
+}
+
+export function atualizarAlerta(id, dados) {
+  const alertas = obterAlertas();
+  const idx = alertas.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  alertas[idx] = { ...alertas[idx], ...dados, id };
   salvarAlertas(alertas);
 }
 
@@ -164,15 +178,17 @@ export function avaliarTudo() {
     }
   }
 
-  // Saúde dos dados
+  // Saúde dos dados — lembra de atualizar manualmente os preços do Tesouro.
   const fontes = statusFontes();
-  const LIMITE_H = 48 * 3600 * 1000;
-  if (!fontes.tesouroApi.atualizadoEm || agora - fontes.tesouroApi.atualizadoEm > LIMITE_H) {
+  const LIMITE_PRECOS = 7 * 24 * 3600 * 1000; // 7 dias
+  if (!fontes.tesouroApi.atualizadoEm || agora - fontes.tesouroApi.atualizadoEm > LIMITE_PRECOS) {
     automaticos.push({
       id: 'auto-dados-tesouro',
       categoria: 'dados',
       condicao: true,
-      mensagem: 'Taxas do Tesouro Direto desatualizadas (sem consulta à API há mais de 48h).',
+      mensagem: fontes.tesouroApi.atualizadoEm
+        ? 'Preços do Tesouro Direto possivelmente desatualizados (sem atualização manual há mais de 7 dias).'
+        : 'Preços do Tesouro Direto ainda não informados — atualize em Tesouro Direto › Atualizar preços.',
       severidade: 'baixa',
     });
   }

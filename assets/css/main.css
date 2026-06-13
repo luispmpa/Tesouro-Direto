@@ -384,25 +384,17 @@ small.hint-text { color: var(--text-3); font-size: 11px; display: block; margin-
 .summary-card .t { font-size: 11px; color: var(--text-2); font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 .summary-card .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.batch-import-card {
-  display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 15px 17px;
-  background: linear-gradient(135deg, var(--warn-bg), var(--surface));
-  border: 1px solid color-mix(in srgb, var(--warn) 38%, var(--border));
-  border-radius: var(--radius); box-shadow: var(--shadow);
+/* Importação genérica em lote — afordância discreta, sem destaque visual. */
+.batch-import-line {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 11.5px; color: var(--text-3);
 }
-.batch-import-icon {
-  width: 42px; height: 42px; flex-shrink: 0; display: grid; place-items: center;
-  border-radius: 12px; background: var(--warn-bg); color: var(--warn);
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
-  font-size: 24px; font-weight: 700;
+.link-btn {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--primary); font-size: 11.5px; font-weight: 600; text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.batch-import-copy { flex: 1; min-width: 200px; }
-.batch-import-kicker {
-  display: block; color: var(--warn); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.09em; text-transform: uppercase; margin-bottom: 2px;
-}
-.batch-import-copy h3 { font-size: 14px; margin-bottom: 2px; }
-.batch-import-copy p { color: var(--text-2); font-size: 11.5px; max-width: 760px; }
+.link-btn:hover { filter: brightness(1.15); }
 
 .import-summary {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
@@ -490,11 +482,17 @@ small.hint-text { color: var(--text-3); font-size: 11px; display: block; margin-
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
-.market-price-item {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+.market-head {
+  display: grid; grid-template-columns: 1fr 130px 130px; gap: 12px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-3); padding: 0 2px 6px; border-bottom: 1px solid var(--border); margin-bottom: 10px;
 }
-.market-price-item .market-price-title { flex: 1; font-size: 13px; }
-.market-price-item input { max-width: 140px; }
+.market-head span:not(:first-child) { text-align: right; }
+.market-price-item {
+  display: grid; grid-template-columns: 1fr 130px 130px; align-items: center; gap: 12px; margin-bottom: 10px;
+}
+.market-price-item .market-price-title { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.market-price-item input { width: 100%; }
 
 .chip-filter { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip {
@@ -528,8 +526,7 @@ small.hint-text { color: var(--text-3); font-size: 11px; display: block; margin-
   .topbar { padding: 12px 14px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
-  .batch-import-card { align-items: flex-start; flex-wrap: wrap; }
-  .batch-import-card .btn { width: 100%; justify-content: center; }
+  .market-head, .market-price-item { grid-template-columns: 1fr 96px 96px; gap: 8px; }
   .batch-result-row { grid-template-columns: 1fr auto; }
   .batch-result-counts { grid-column: 1 / -1; }
   .kpi .valor { font-size: 20px; }

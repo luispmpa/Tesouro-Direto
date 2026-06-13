@@ -8,12 +8,11 @@
 // remotamente quando o endpoint está configurado.
 
 import {
-  obterAlertas, salvarAlertas, adicionarAlerta, removerAlerta, alternarStatus,
+  obterAlertas, adicionarAlerta, atualizarAlerta, removerAlerta, alternarStatus,
   avaliarTudo, registrarDisparos, obterHistorico, limparHistorico,
-  TIPOS_ACAO, BASES_VARIACAO, TIPOS_TESOURO,
+  TIPOS_ACAO, BASES_VARIACAO,
 } from '../services/alertEngine.js';
-import { obterPrefs, salvarPrefs, carteiraMarcada } from '../services/dataStore.js';
-import { obterCache } from '../services/tesouroApi.js';
+import { obterPrefs, salvarPrefs } from '../services/dataStore.js';
 import { configurado, executarAcao } from '../services/sheetsBridge.js';
 import { fmtBRL, fmtNum, fmtDataHoraBR, tempoRelativo, esc } from '../utils/format.js';
 import { abrirModal } from '../utils/ui.js';
@@ -23,7 +22,7 @@ let filtroCategoria = 'todos';
 export function renderAlertas(view, params) {
   // Deep-link "#/alertas?cat=...": já abre na categoria informada.
   const catParam = params?.get('cat');
-  if (catParam && ['todos', 'acao', 'tesouro', 'atingidos'].includes(catParam)) {
+  if (catParam && ['todos', 'acao', 'atingidos'].includes(catParam)) {
     filtroCategoria = catParam;
   }
 
@@ -48,10 +47,9 @@ export function renderAlertas(view, params) {
     <div class="notice" style="margin-bottom:16px">
       <strong>E-mail:</strong> os avisos por e-mail continuam sendo enviados pelo Apps Script da planilha
       (função <code>verificarAlertas</code>, rodando por gatilho — independe deste site estar aberto).
-      Este painel avalia as mesmas regras com os dados disponíveis no navegador.
       ${configurado()
-        ? '<button class="btn btn-secondary btn-sm" id="btn-verificar-remoto" style="margin-left:8px">▶ Executar verificação por e-mail agora</button>'
-        : 'Para disparar a verificação remota daqui, configure o endpoint em <a href="#/dados" style="color:var(--primary)">Dados &amp; Integrações</a>.'}
+        ? 'Inclusões, edições e remoções feitas aqui são <strong>gravadas na planilha do Drive</strong> automaticamente. <button class="btn btn-secondary btn-sm" id="btn-verificar-remoto" style="margin-left:8px">▶ Executar verificação por e-mail agora</button>'
+        : 'As alterações ficam neste navegador. Para refleti-las na planilha do Drive, conecte o endpoint em <a href="#/dados" style="color:var(--primary)">Dados &amp; Integrações</a>.'}
     </div>
 
     <div class="section-title">
@@ -60,7 +58,6 @@ export function renderAlertas(view, params) {
         <div class="chip-filter">
           ${chipFiltro('todos', 'Todos')}
           ${chipFiltro('acao', 'Ações')}
-          ${chipFiltro('tesouro', 'Tesouro')}
           ${chipFiltro('atingidos', 'Atingidos')}
         </div>
         <button class="btn btn-primary btn-sm" id="btn-novo-alerta">+ Novo alerta</button>
@@ -154,9 +151,14 @@ function montarLista(view, configurados) {
           </div>
         </div>
         ${estado}
-        <button class="btn-icon delete" data-remover="${esc(a.id)}" title="Excluir alerta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
+        <span class="action-btns" style="display:inline-flex;gap:2px">
+          ${!ehTesouro ? `<button class="btn-icon" data-editar="${esc(a.id)}" title="Editar alerta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>` : ''}
+          <button class="btn-icon delete" data-remover="${esc(a.id)}" title="Excluir alerta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </span>
       </div>`;
   }).join('');
 }
@@ -171,7 +173,7 @@ function ligarEventos(view) {
     });
   });
 
-  view.querySelector('#btn-novo-alerta').addEventListener('click', abrirFormAlerta);
+  view.querySelector('#btn-novo-alerta').addEventListener('click', () => abrirFormAlerta());
 
   view.querySelector('#lista-alertas').addEventListener('change', (e) => {
     const toggle = e.target.closest('[data-toggle]');
@@ -181,10 +183,15 @@ function ligarEventos(view) {
     }
   });
   view.querySelector('#lista-alertas').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-editar]');
+    if (ed) {
+      abrirFormAlerta(ed.dataset.editar);
+      return;
+    }
     const rem = e.target.closest('[data-remover]');
     if (rem && confirm('Excluir este alerta?')) {
       removerAlerta(rem.dataset.remover);
-      window.showToast('Alerta excluído.', 'info');
+      window.showToast(configurado() ? 'Alerta excluído (refletido na planilha).' : 'Alerta excluído.', 'info');
       renderAlertas(view);
     }
   });
@@ -225,93 +232,70 @@ function ligarEventos(view) {
   }
 }
 
-// --------------------------------------------------------- novo alerta ------
+// --------------------------------------------------- novo / editar alerta ---
 
-function abrirFormAlerta() {
-  // Sugestões de ativos: títulos da carteira (p/ alertas de taxa) e da API.
-  const { posicoes } = carteiraMarcada();
-  const titulosCarteira = [...new Set(posicoes.map((p) => p.titulo))].sort();
-  const apiCache = obterCache();
-  const titulosApi = apiCache ? [...new Set(Object.values(apiCache.bonds).map((b) => b.nome))].sort() : [];
-  const titulosTesouro = [...new Set([...titulosCarteira, ...titulosApi])];
+function abrirFormAlerta(id = null) {
+  const alerta = id ? obterAlertas().find((a) => a.id === id) : null;
+  const ehVariacaoInicial = (alerta?.tipo || '').startsWith('Variação');
 
   abrirModal({
-    titulo: 'Novo alerta',
+    titulo: alerta ? 'Editar alerta' : 'Novo alerta',
     corpoHTML: `
       <form id="form-alerta">
         <div class="form-group">
-          <label>Categoria</label>
-          <select id="fa-categoria">
-            <option value="acao">Ação / ativo da B3</option>
-            <option value="tesouro">Taxa do Tesouro Direto</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label id="fa-ativo-label">Código do ativo</label>
-          <input id="fa-ativo" required placeholder="Ex.: PETR4" list="fa-sugestoes" autocomplete="off">
-          <datalist id="fa-sugestoes"></datalist>
+          <label>Código do ativo (ação / ativo da B3)</label>
+          <input id="fa-ativo" required placeholder="Ex.: PETR4" autocomplete="off" value="${esc(alerta?.ativo || '')}">
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Tipo de alerta</label>
-            <select id="fa-tipo"></select>
+            <select id="fa-tipo">${TIPOS_ACAO.map((t) => `<option ${alerta?.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
           </div>
           <div class="form-group">
-            <label id="fa-alvo-label">Valor-alvo (R$)</label>
-            <input id="fa-alvo" type="number" step="0.01" required placeholder="0,00">
+            <label id="fa-alvo-label">${ehVariacaoInicial ? 'Variação-alvo (%)' : 'Valor-alvo (R$)'}</label>
+            <input id="fa-alvo" type="number" step="0.01" required placeholder="0,00" value="${alerta?.valorAlvo ?? ''}">
           </div>
         </div>
-        <div class="form-group" id="fa-base-wrap" style="display:none">
+        <div class="form-group" id="fa-base-wrap" style="display:${ehVariacaoInicial ? '' : 'none'}">
           <label>Base da variação</label>
-          <select id="fa-base">${BASES_VARIACAO.map((b) => `<option>${b}</option>`).join('')}</select>
+          <select id="fa-base">${BASES_VARIACAO.map((b) => `<option ${alerta?.base === b ? 'selected' : ''}>${b}</option>`).join('')}</select>
         </div>
         <div class="form-group">
           <label>Observação (opcional)</label>
-          <input id="fa-obs" placeholder="Ex.: oportunidade de compra">
+          <input id="fa-obs" placeholder="Ex.: oportunidade de compra" value="${esc(alerta?.obs || '')}">
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Criar alerta</button>
+        <button type="submit" class="btn btn-primary btn-block">${alerta ? 'Salvar alterações' : 'Criar alerta'}</button>
       </form>`,
     aoMontar(modal, fechar) {
-      const selCat = modal.querySelector('#fa-categoria');
       const selTipo = modal.querySelector('#fa-tipo');
-      const sugestoes = modal.querySelector('#fa-sugestoes');
 
-      function atualizarCampos() {
-        const ehTesouro = selCat.value === 'tesouro';
-        selTipo.innerHTML = (ehTesouro ? TIPOS_TESOURO : TIPOS_ACAO).map((t) => `<option>${t}</option>`).join('');
-        modal.querySelector('#fa-ativo-label').textContent = ehTesouro ? 'Título do Tesouro' : 'Código do ativo';
-        modal.querySelector('#fa-ativo').placeholder = ehTesouro ? 'Ex.: Tesouro IPCA+ 2045' : 'Ex.: PETR4';
-        sugestoes.innerHTML = (ehTesouro ? titulosTesouro : []).map((t) => `<option value="${esc(t)}">`).join('');
-        atualizarRotuloAlvo();
-      }
       function atualizarRotuloAlvo() {
-        const ehTesouro = selCat.value === 'tesouro';
         const ehVariacao = selTipo.value.startsWith('Variação');
-        modal.querySelector('#fa-alvo-label').textContent =
-          ehTesouro ? 'Taxa-alvo (% a.a.)' : ehVariacao ? 'Variação-alvo (%)' : 'Valor-alvo (R$)';
+        modal.querySelector('#fa-alvo-label').textContent = ehVariacao ? 'Variação-alvo (%)' : 'Valor-alvo (R$)';
         modal.querySelector('#fa-base-wrap').style.display = ehVariacao ? '' : 'none';
       }
-      selCat.addEventListener('change', atualizarCampos);
       selTipo.addEventListener('change', atualizarRotuloAlvo);
-      atualizarCampos();
 
       modal.querySelector('#form-alerta').addEventListener('submit', (e) => {
         e.preventDefault();
         const ativo = modal.querySelector('#fa-ativo').value.trim();
         const alvo = parseFloat(modal.querySelector('#fa-alvo').value);
-        if (!ativo) return window.showToast('Informe o ativo/título.', 'error');
+        if (!ativo) return window.showToast('Informe o código do ativo.', 'error');
         if (!Number.isFinite(alvo)) return window.showToast('Informe o valor-alvo.', 'error');
         const ehVariacao = selTipo.value.startsWith('Variação');
-        adicionarAlerta({
-          categoria: selCat.value,
-          ativo: selCat.value === 'acao' ? ativo.toUpperCase() : ativo,
+        const dados = {
+          categoria: 'acao',
+          ativo: ativo.toUpperCase(),
           tipo: selTipo.value,
           valorAlvo: alvo,
           base: ehVariacao ? modal.querySelector('#fa-base').value : '',
           obs: modal.querySelector('#fa-obs').value.trim(),
-        });
+        };
+        if (alerta) atualizarAlerta(alerta.id, dados);
+        else adicionarAlerta(dados);
         fechar();
-        window.showToast('Alerta criado.', 'success');
+        const sufixo = configurado() ? ' (refletido na planilha)' : '';
+        window.showToast((alerta ? 'Alerta atualizado.' : 'Alerta criado.') + sufixo, 'success');
         renderAlertas(document.getElementById('view'));
       });
     },

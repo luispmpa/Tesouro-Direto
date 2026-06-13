@@ -1,13 +1,13 @@
 // Módulo Tesouro Direto — carteira completa com marcação a mercado, CRUD de
-// aportes (preservado do app original), atualização de preços (API oficial,
-// planilha Excel ou manual), simulação de venda antecipada vs. vencimento e
+// aportes (preservado do app original), atualização MANUAL de preços (digitação
+// ou planilha de resgate), simulação de venda antecipada vs. vencimento e
 // gráficos por título/vencimento/indexador.
 
 import {
   carteiraMarcada, agruparPosicoes, obterCarteira, salvarCarteira,
   restaurarCarteiraInicial, obterPrecosManuais, salvarPrecosManuais, generateId,
 } from '../services/dataStore.js';
-import { atualizarTesouro, obterCache, dadosDoTitulo, obterHistoricoTaxas } from '../services/tesouroApi.js';
+import { obterCache, dadosDoTitulo, obterHistoricoTaxas, salvarMercadoManual } from '../services/tesouroApi.js';
 import { fmtBRL, fmtNum, fmtPct, sinal, classeSinal, fmtDataBR, fmtDataHoraBR, esc } from '../utils/format.js';
 import { tabelaOrdenavel, graficoBarras, graficoLinha, abrirModal } from '../utils/ui.js';
 import { mesmoTituloExtrato, parseExtratoAnalitico, reconciliarExtratoTitulo, reconciliarLoteExtratos } from '../utils/tesouroExtrato.js';
@@ -35,7 +35,7 @@ export function renderTesouro(view, params) {
     <div class="section-title">
       <h2>Resumo por título</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" id="btn-atualizar-mercado">⟳ Atualizar mercado</button>
+        <button class="btn btn-secondary btn-sm" id="btn-atualizar-mercado">⟳ Atualizar preços (manual)</button>
         <button class="btn btn-secondary btn-sm" id="btn-importar-extrato">⬆ ${filtroTitulo === 'Todos' ? 'Importar 1 título' : 'Atualizar título selecionado'}</button>
         <input type="file" id="extrato-file" accept=".xlsx,.xls" hidden>
         <button class="btn btn-primary btn-sm" id="btn-novo-aporte">+ Novo aporte</button>
@@ -43,16 +43,11 @@ export function renderTesouro(view, params) {
     </div>
     <div class="summary-cards" id="cards-titulos"></div>
 
-    <section class="batch-import-card">
-      <div class="batch-import-icon" aria-hidden="true">⇧</div>
-      <div class="batch-import-copy">
-        <span class="batch-import-kicker">Importação genérica</span>
-        <h3>Atualização em lote da carteira</h3>
-        <p>Selecione vários Extratos Analíticos de uma vez. O painel identifica cada título, confere todas as alterações e aplica o lote em uma única confirmação.</p>
-      </div>
-      <button class="btn btn-batch" id="btn-importar-lote">Selecionar 2 ou mais arquivos</button>
+    <p class="batch-import-line">
+      <span>Vários títulos de uma vez?</span>
+      <button type="button" class="link-btn" id="btn-importar-lote">Importar Extratos Analíticos em lote</button>
       <input type="file" id="extratos-lote-file" accept=".xlsx,.xls" multiple hidden>
-    </section>
+    </p>
 
     <div class="section-title">
       <h2>Meus aportes <span class="count-badge" id="contagem"></span></h2>
@@ -60,10 +55,9 @@ export function renderTesouro(view, params) {
     </div>
     <div class="card" style="padding:0" id="tabela-posicoes"></div>
     <p class="text-muted mt">
-      Última atualização da API do Tesouro: ${apiAtualizadaEm ? fmtDataHoraBR(new Date(apiAtualizadaEm)) : 'ainda não consultada'}.
-      Preços com origem: <span class="badge badge-pos">API</span> resgate oficial ·
-      <span class="badge badge-info">manual</span> informado por você ·
-      <span class="badge badge-mute">compra</span> sem dado de mercado (fallback).
+      Preços de mercado atualizados manualmente em ${apiAtualizadaEm ? fmtDataHoraBR(new Date(apiAtualizadaEm)) : 'nunca'}.
+      Origem do PU: <span class="badge badge-info">manual</span> informado por você (digitado ou importado) ·
+      <span class="badge badge-mute">compra</span> sem dado de mercado (fallback no preço de aquisição).
     </p>
 
     <div class="section-title"><h2>Gráficos da carteira</h2></div>
@@ -129,8 +123,7 @@ function montarCards(view, posicoes, totais) {
 // -------------------------------------------------------------- tabela -----
 
 function badgeFonte(p) {
-  if (p.fontePreco === 'api') return '<span class="badge badge-pos" title="PU de resgate da API oficial">API</span>';
-  if (p.fontePreco === 'manual') return '<span class="badge badge-info" title="Preço informado manualmente">manual</span>';
+  if (p.fontePreco === 'manual' || p.fontePreco === 'api') return '<span class="badge badge-info" title="PU de resgate informado manualmente">manual</span>';
   return '<span class="badge badge-mute" title="Sem dado de mercado: usando preço de compra">compra</span>';
 }
 
@@ -244,7 +237,7 @@ function montarGraficos(view, posicoes) {
       dias.map((d) => d.date.slice(5)), datasets, { formatador: (v) => fmtNum(v, 2) + '%' });
   } else {
     view.querySelector('#ch-historico').closest('.chart-box').style.display = 'none';
-    vazioEl.textContent = 'O histórico é construído a cada atualização da API (uma amostra por dia). Volte amanhã para ver a evolução.';
+    vazioEl.textContent = 'O histórico é construído a cada atualização manual dos preços (uma amostra por dia). Atualize em dias diferentes para ver a evolução.';
   }
 
   const porVcto = agruparPosicoes(posicoes, 'vencimento').sort((a, b) => String(a.chave).localeCompare(String(b.chave)));
@@ -552,69 +545,40 @@ function abrirModalMercado() {
   const titulosUnicos = [...new Set(carteira.map((p) => p.titulo))].sort();
 
   abrirModal({
-    titulo: 'Atualizar preços de mercado',
+    titulo: 'Atualizar preços de mercado (manual)',
     large: true,
     corpoHTML: `
       <p class="text-muted" style="margin-bottom:16px">
-        Informe o preço unitário de <strong>resgate</strong> de cada título para a marcação a mercado.
-        Busque automaticamente na API oficial, importe a planilha de resgate do site do Tesouro
-        (.xlsx/.xls/.csv) ou preencha manualmente.</p>
-      <div style="margin-bottom:14px;padding:14px;background:var(--bg-soft);border-radius:9px;border:1px dashed var(--primary)">
-        <label style="color:var(--primary)">Online: API oficial do Tesouro Direto</label>
-        <button type="button" id="btn-fetch-market" class="btn btn-primary btn-sm"><span id="btn-fetch-label">🔄 Buscar preços e taxas atuais</span></button>
-        <small class="hint-text">Consulta o PU de venda (resgate) e a Rentabilidade Anual atual de cada título e preenche os campos abaixo. Com a conexão do Apps Script configurada, a busca passa pela sua planilha (sem bloqueio de CORS); senão, tenta direto e por proxies públicos.</small>
-      </div>
+        O site do Tesouro Direto bloqueia o acesso automático, então a atualização é
+        <strong>manual</strong>. Informe o <strong>PU de resgate</strong> de cada título (e, se quiser,
+        a <strong>taxa de resgate</strong> atual para a marcação) digitando ou importando a planilha de
+        resgate do site (.xlsx/.xls/.csv).</p>
       <div style="margin-bottom:18px;padding:14px;background:var(--bg-soft);border-radius:9px;border:1px dashed var(--border-strong)">
-        <label for="upload-excel" style="color:var(--primary)">Manual: importar planilha do Tesouro (Excel)</label>
+        <label for="upload-excel" style="color:var(--primary)">Importar planilha de resgate do Tesouro (Excel)</label>
         <input type="file" id="upload-excel" accept=".xlsx, .xls, .csv">
-        <small class="hint-text">Lê as colunas "Título" e "Preço unitário de resgate".</small>
+        <small class="hint-text">Lê as colunas "Título" e "Preço unitário de resgate" (e a taxa de resgate, se houver).</small>
       </div>
       <form id="form-market">
         <h3 style="font-size:13px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px">Preenchimento manual / conferência</h3>
+        <div class="market-head">
+          <span>Título</span><span>PU resgate (R$)</span><span>Taxa resgate (% a.a.)</span>
+        </div>
         <div id="market-inputs">
           ${titulosUnicos.map((t) => {
             const mercado = dadosDoTitulo(apiCache, t);
             const valor = precos[t] ?? mercado?.puVenda ?? carteira.find((p) => p.titulo === t).precoUnitario;
+            const taxa = Number.isFinite(mercado?.taxaVenda) ? mercado.taxaVenda : '';
             return `
               <div class="market-price-item">
                 <span class="market-price-title">${esc(t)}</span>
                 <input type="number" step="0.01" class="market-price-input" data-titulo="${esc(t)}" value="${Number(valor).toFixed(2)}" required>
+                <input type="number" step="0.01" class="market-rate-input" data-titulo="${esc(t)}" value="${taxa === '' ? '' : Number(taxa).toFixed(2)}" placeholder="opcional">
               </div>`;
           }).join('')}
         </div>
         <button type="submit" class="btn btn-primary btn-block" style="margin-top:18px">Atualizar e calcular</button>
       </form>`,
     aoMontar(modal, fechar) {
-      modal.querySelector('#btn-fetch-market').addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        const label = modal.querySelector('#btn-fetch-label');
-        btn.disabled = true;
-        label.textContent = '⏳ Buscando...';
-        try {
-          const cache = await atualizarTesouro();
-          let ok = 0; const faltam = [];
-          modal.querySelectorAll('.market-price-input').forEach((input) => {
-            const mercado = dadosDoTitulo(cache, input.dataset.titulo);
-            if (mercado && Number.isFinite(mercado.puVenda) && mercado.puVenda > 0) {
-              input.value = mercado.puVenda.toFixed(2);
-              input.style.borderColor = 'var(--pos)';
-              ok++;
-            } else {
-              input.style.borderColor = 'var(--neg)';
-              faltam.push(input.dataset.titulo);
-            }
-          });
-          window.showToast(ok > 0
-            ? `${ok} preço(s) atualizados pela API.${faltam.length ? ` ${faltam.length} título(s) fora de negociação: preencha manualmente.` : ''}`
-            : 'Nenhum título da carteira foi encontrado na API.', ok > 0 ? 'success' : 'error', 6000);
-        } catch {
-          window.showToast('Não foi possível buscar online (rede/CORS). Use a planilha ou o preenchimento manual.', 'error', 6000);
-        } finally {
-          btn.disabled = false;
-          label.textContent = '🔄 Buscar preços e taxas atuais';
-        }
-      });
-
       modal.querySelector('#upload-excel').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -630,14 +594,16 @@ function abrirModalMercado() {
               const titulo = row[0] ? String(row[0]).trim() : '';
               const input = modal.querySelector(`.market-price-input[data-titulo="${CSS.escape(titulo)}"]`);
               if (!input || row[2] == null) return;
-              let preco = typeof row[2] === 'number'
-                ? row[2]
-                : parseFloat(String(row[2]).replace(/R\$\s*/gi, '').replace(/\./g, '').replace(',', '.'));
+              const preco = lerNumeroPlanilha(row[2]);
               if (Number.isFinite(preco) && preco > 0) {
                 input.value = preco.toFixed(2);
                 input.style.borderColor = 'var(--pos)';
                 ok++;
               }
+              // Taxa de resgate (coluna opcional, se presente na planilha).
+              const taxaInput = modal.querySelector(`.market-rate-input[data-titulo="${CSS.escape(titulo)}"]`);
+              const taxa = row.length > 3 ? lerNumeroPlanilha(row[3]) : null;
+              if (taxaInput && Number.isFinite(taxa)) taxaInput.value = taxa.toFixed(2);
             });
             window.showToast(ok > 0
               ? `${ok} preço(s) reconhecidos na planilha. Confira e clique em Atualizar.`
@@ -653,17 +619,34 @@ function abrirModalMercado() {
       modal.querySelector('#form-market').addEventListener('submit', (e) => {
         e.preventDefault();
         const novos = { ...obterPrecosManuais() };
+        const mercadoEntries = [];
         modal.querySelectorAll('.market-price-input').forEach((input) => {
+          const titulo = input.dataset.titulo;
           const v = parseFloat(input.value);
-          if (Number.isFinite(v) && v > 0) novos[input.dataset.titulo] = v;
+          const taxaInput = modal.querySelector(`.market-rate-input[data-titulo="${CSS.escape(titulo)}"]`);
+          const taxa = taxaInput ? parseFloat(taxaInput.value) : NaN;
+          if (Number.isFinite(v) && v > 0) novos[titulo] = v;
+          mercadoEntries.push({
+            nome: titulo,
+            puVenda: Number.isFinite(v) && v > 0 ? v : undefined,
+            taxaVenda: Number.isFinite(taxa) ? taxa : undefined,
+          });
         });
         salvarPrecosManuais(novos);
+        salvarMercadoManual(mercadoEntries);
         fechar();
-        window.showToast('Preços de mercado atualizados.', 'success');
+        window.showToast('Preços de mercado atualizados manualmente.', 'success');
         rerenderPagina();
       });
     },
   });
+}
+
+// Interpreta um número de planilha em pt-BR ou número nativo do Excel.
+function lerNumeroPlanilha(valor) {
+  if (typeof valor === 'number') return Number.isFinite(valor) ? valor : null;
+  const n = parseFloat(String(valor ?? '').replace(/R\$\s*/gi, '').replace(/%/g, '').replace(/\./g, '').replace(',', '.').trim());
+  return Number.isFinite(n) ? n : null;
 }
 
 // ------------------------------------------------------ backup/restore -----
