@@ -207,3 +207,58 @@ export function reconciliarExtratoTitulo(carteira, extrato, { tituloDestino = ex
     },
   };
 }
+
+export function reconciliarLoteExtratos(carteira, extratos, { gerarId } = {}) {
+  if (!Array.isArray(extratos) || !extratos.length) {
+    throw new Error('Selecione ao menos um Extrato Analítico.');
+  }
+  if (typeof gerarId !== 'function') {
+    throw new Error('Não foi possível gerar identificadores para os novos aportes.');
+  }
+
+  const titulosVistos = new Map();
+  extratos.forEach((extrato) => {
+    if (!extrato?.titulo || !Array.isArray(extrato.aplicacoes)) {
+      throw new Error('Um dos extratos do lote é inválido.');
+    }
+    const chave = normalizarTituloExtrato(extrato.titulo);
+    if (titulosVistos.has(chave)) {
+      throw new Error(`O lote contém mais de um arquivo para "${extrato.titulo}". Envie apenas um extrato por título.`);
+    }
+    titulosVistos.set(chave, extrato.titulo);
+  });
+
+  let portfolio = Array.isArray(carteira) ? carteira : [];
+  const resultados = [];
+  extratos.forEach((extrato) => {
+    const tituloExistente = portfolio.find((item) => mesmoTituloExtrato(item?.titulo, extrato.titulo))?.titulo;
+    const resultado = reconciliarExtratoTitulo(portfolio, extrato, {
+      tituloDestino: tituloExistente || extrato.titulo,
+      gerarId,
+    });
+    portfolio = resultado.portfolio;
+    resultados.push(resultado.resumo);
+  });
+
+  const totais = resultados.reduce((acc, resumo) => {
+    acc.existentes += resumo.existentes;
+    acc.recebidos += resumo.recebidos;
+    acc.inalterados += resumo.inalterados;
+    acc.atualizados += resumo.atualizados;
+    acc.adicionados += resumo.adicionados;
+    acc.removidos += resumo.removidos;
+    acc.alteracoes += resumo.alteracoes;
+    return acc;
+  }, {
+    titulos: resultados.length,
+    existentes: 0,
+    recebidos: 0,
+    inalterados: 0,
+    atualizados: 0,
+    adicionados: 0,
+    removidos: 0,
+    alteracoes: 0,
+  });
+
+  return { portfolio, resultados, totais };
+}

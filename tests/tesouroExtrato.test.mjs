@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   mesmoTituloExtrato,
   parseExtratoAnalitico,
+  reconciliarLoteExtratos,
   reconciliarExtratoTitulo,
 } from '../assets/js/utils/tesouroExtrato.js';
 
@@ -102,5 +103,46 @@ test('não trata uma planilha incompleta como extrato vazio', () => {
   assert.throws(
     () => parseExtratoAnalitico([['EXTRATO ANALÍTICO - Tesouro IPCA+ 2045']]),
     /colunas do Extrato Analítico não foram encontradas/
+  );
+});
+
+test('reconcilia vários títulos em uma única operação atômica', () => {
+  let sequencia = 0;
+  const carteira = [
+    { id: 'ipca-antigo', titulo: 'Tesouro IPCA+ 2045', dataAplicacao: '06/10/2023', quantidade: 0.07, precoUnitario: 1181.32, valorInvestido: 82.69, taxaContratada: 'IPCA + 6,01%' },
+    { id: 'selic-antigo', titulo: 'Tesouro Selic 2031', dataAplicacao: '27/01/2026', quantidade: 2.44, precoUnitario: 18185.84, valorInvestido: 44373.44, taxaContratada: 'SELIC + 0,098%' },
+    { id: 'preservar', titulo: 'Tesouro Prefixado 2029', dataAplicacao: '02/10/2023', quantidade: 0.06, precoUnitario: 567.48, valorInvestido: 34.04, taxaContratada: '11,45%' },
+  ];
+  const lote = [
+    parseExtratoAnalitico(linhas('Tesouro IPCA+ 2045', [
+      ['06/10/2023', '0,07', '1.181,32', '82,69', 'IPCA + 6,01%'],
+      ['11/04/2024', '0,10', '1.238,77', '123,87', 'IPCA + 6,06%'],
+    ])),
+    parseExtratoAnalitico(linhas('Tesouro Selic 2031', [
+      ['27/01/2026', '2,45', '18.185,84', '44.555,30', 'SELIC + 0,098%'],
+    ])),
+  ];
+
+  const resultado = reconciliarLoteExtratos(carteira, lote, {
+    gerarId: () => `lote-${++sequencia}`,
+  });
+
+  assert.equal(resultado.totais.titulos, 2);
+  assert.equal(resultado.totais.inalterados, 1);
+  assert.equal(resultado.totais.atualizados, 1);
+  assert.equal(resultado.totais.adicionados, 1);
+  assert.equal(resultado.totais.removidos, 0);
+  assert.equal(resultado.portfolio.some((item) => item.id === 'preservar'), true);
+  assert.equal(resultado.portfolio.find((item) => item.id === 'selic-antigo').quantidade, 2.45);
+});
+
+test('recusa dois extratos do mesmo título no mesmo lote', () => {
+  const extrato = parseExtratoAnalitico(linhas('Tesouro IPCA+ 2045', [
+    ['06/10/2023', '0,07', '1.181,32', '82,69', 'IPCA + 6,01%'],
+  ]));
+
+  assert.throws(
+    () => reconciliarLoteExtratos([], [extrato, extrato], { gerarId: () => 'novo' }),
+    /mais de um arquivo/
   );
 });

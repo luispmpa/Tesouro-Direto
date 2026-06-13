@@ -10,7 +10,7 @@ import {
 import { atualizarTesouro, obterCache, dadosDoTitulo, obterHistoricoTaxas } from '../services/tesouroApi.js';
 import { fmtBRL, fmtNum, fmtPct, sinal, classeSinal, fmtDataBR, fmtDataHoraBR, esc } from '../utils/format.js';
 import { tabelaOrdenavel, graficoBarras, graficoLinha, abrirModal } from '../utils/ui.js';
-import { mesmoTituloExtrato, parseExtratoAnalitico, reconciliarExtratoTitulo } from '../utils/tesouroExtrato.js';
+import { mesmoTituloExtrato, parseExtratoAnalitico, reconciliarExtratoTitulo, reconciliarLoteExtratos } from '../utils/tesouroExtrato.js';
 
 let filtroTitulo = 'Todos';
 
@@ -36,12 +36,23 @@ export function renderTesouro(view, params) {
       <h2>Resumo por título</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" id="btn-atualizar-mercado">⟳ Atualizar mercado</button>
-        <button class="btn btn-secondary btn-sm" id="btn-importar-extrato">⬆ ${filtroTitulo === 'Todos' ? 'Importar extrato de título' : 'Atualizar este título via Excel'}</button>
+        <button class="btn btn-secondary btn-sm" id="btn-importar-extrato">⬆ ${filtroTitulo === 'Todos' ? 'Importar 1 título' : 'Atualizar título selecionado'}</button>
         <input type="file" id="extrato-file" accept=".xlsx,.xls" hidden>
         <button class="btn btn-primary btn-sm" id="btn-novo-aporte">+ Novo aporte</button>
       </div>
     </div>
     <div class="summary-cards" id="cards-titulos"></div>
+
+    <section class="batch-import-card">
+      <div class="batch-import-icon" aria-hidden="true">⇧</div>
+      <div class="batch-import-copy">
+        <span class="batch-import-kicker">Importação genérica</span>
+        <h3>Atualização em lote da carteira</h3>
+        <p>Selecione vários Extratos Analíticos de uma vez. O painel identifica cada título, confere todas as alterações e aplica o lote em uma única confirmação.</p>
+      </div>
+      <button class="btn btn-batch" id="btn-importar-lote">Selecionar 2 ou mais arquivos</button>
+      <input type="file" id="extratos-lote-file" accept=".xlsx,.xls" multiple hidden>
+    </section>
 
     <div class="section-title">
       <h2>Meus aportes <span class="count-badge" id="contagem"></span></h2>
@@ -374,7 +385,7 @@ function rerenderPagina() {
 
 // ------------------------------------------ importar extrato por título ----
 
-async function importarExtratoArquivo(file) {
+async function lerExtratoArquivo(file) {
   if (typeof XLSX === 'undefined') {
     throw new Error('O leitor de Excel não está disponível. Recarregue a página e tente novamente.');
   }
@@ -383,7 +394,11 @@ async function importarExtratoArquivo(file) {
   if (!ws) throw new Error('A planilha não possui uma aba legível.');
 
   const linhas = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
-  const extrato = parseExtratoAnalitico(linhas);
+  return { ...parseExtratoAnalitico(linhas), arquivo: file.name };
+}
+
+async function importarExtratoArquivo(file) {
+  const extrato = await lerExtratoArquivo(file);
   if (filtroTitulo !== 'Todos' && !mesmoTituloExtrato(extrato.titulo, filtroTitulo)) {
     throw new Error(`O arquivo é de "${extrato.titulo}", mas o título selecionado é "${filtroTitulo}".`);
   }
@@ -393,6 +408,25 @@ async function importarExtratoArquivo(file) {
   const tituloDestino = filtroTitulo === 'Todos' ? (tituloExistente || extrato.titulo) : filtroTitulo;
   const resultado = reconciliarExtratoTitulo(carteira, extrato, { tituloDestino, gerarId: generateId });
   abrirPreviaExtrato(resultado, extrato.aplicacoes.length);
+}
+
+async function importarLoteArquivos(files) {
+  const selecionados = [...files];
+  if (selecionados.length < 2) {
+    throw new Error('Para a atualização em lote, selecione dois ou mais arquivos. Para apenas um, use "Importar 1 título".');
+  }
+
+  const extratos = [];
+  for (const file of selecionados) {
+    try {
+      extratos.push(await lerExtratoArquivo(file));
+    } catch (err) {
+      throw new Error(`${file.name}: ${err?.message || 'não foi possível ler o arquivo.'}`);
+    }
+  }
+
+  const resultado = reconciliarLoteExtratos(obterCarteira(), extratos, { gerarId: generateId });
+  abrirPreviaLote(resultado, extratos);
 }
 
 function abrirPreviaExtrato(resultado, totalAplicacoes) {
@@ -437,6 +471,70 @@ function abrirPreviaExtrato(resultado, totalAplicacoes) {
       });
     },
   });
+}
+
+function abrirPreviaLote(resultado, extratos) {
+  const { portfolio, resultados, totais } = resultado;
+  const semAlteracoes = totais.alteracoes === 0;
+  const avisoRemocao = totais.removidos > 0
+    ? `<p class="notice warn mt"><strong>Atenção:</strong> ${totais.removidos} aporte(s) deixarão a carteira porque não aparecem nos respectivos extratos.</p>`
+    : '';
+
+  abrirModal({
+    titulo: 'Conferir atualização em lote',
+    large: true,
+    corpoHTML: `
+      <p class="text-muted" style="margin-bottom:14px">Foram identificados <strong>${totais.titulos} títulos</strong> em ${extratos.length} arquivos. A carteira só será alterada após sua confirmação.</p>
+      <div class="import-summary">
+        ${resumoImportacao('Títulos', totais.titulos)}
+        ${resumoImportacao('Aportes nos arquivos', totais.recebidos)}
+        ${resumoImportacao('Sem alteração', totais.inalterados, 'pos')}
+        ${resumoImportacao('Atualizados', totais.atualizados, 'info')}
+        ${resumoImportacao('Novos', totais.adicionados, 'pos')}
+        ${resumoImportacao('Removidos', totais.removidos, totais.removidos ? 'neg' : '')}
+      </div>
+      <div class="batch-results mt">
+        ${resultados.map((resumo, index) => linhaResultadoLote(resumo, extratos[index]?.arquivo)).join('')}
+      </div>
+      ${semAlteracoes ? '<p class="notice mt"><strong>Nenhuma alteração encontrada.</strong> Todos os títulos do lote já estão sincronizados.</p>' : ''}
+      ${avisoRemocao}
+      <button type="button" class="btn btn-primary btn-block mt" id="btn-confirmar-lote" ${semAlteracoes ? 'disabled' : ''}>
+        ${semAlteracoes ? 'Carteira já sincronizada' : `Aplicar atualização de ${totais.titulos} títulos`}
+      </button>`,
+    aoMontar(modal, fechar) {
+      modal.querySelector('#btn-confirmar-lote').addEventListener('click', () => {
+        salvarCarteira(portfolio);
+        filtroTitulo = 'Todos';
+        fechar();
+        window.showToast(
+          `Lote aplicado em ${totais.titulos} título(s): ${totais.adicionados} novo(s), ${totais.atualizados} atualizado(s) e ${totais.removidos} removido(s).`,
+          'success',
+          7000
+        );
+        rerenderPagina();
+      });
+    },
+  });
+}
+
+function linhaResultadoLote(resumo, arquivo) {
+  const status = resumo.alteracoes === 0
+    ? '<span class="badge badge-pos">sincronizado</span>'
+    : `<span class="badge badge-info">${resumo.alteracoes} ${resumo.alteracoes === 1 ? 'alteração' : 'alterações'}</span>`;
+  return `
+    <div class="batch-result-row">
+      <div class="batch-result-title">
+        <strong>${esc(resumo.titulo)}</strong>
+        <small>${esc(arquivo || 'Extrato Analítico')}</small>
+      </div>
+      <div class="batch-result-counts">
+        <span>${resumo.recebidos} no arquivo</span>
+        ${resumo.atualizados ? `<span class="info">${resumo.atualizados} atualizado(s)</span>` : ''}
+        ${resumo.adicionados ? `<span class="pos">${resumo.adicionados} novo(s)</span>` : ''}
+        ${resumo.removidos ? `<span class="neg">${resumo.removidos} removido(s)</span>` : ''}
+      </div>
+      ${status}
+    </div>`;
 }
 
 const resumoImportacao = (rotulo, valor, classe = '') => `
@@ -586,6 +684,20 @@ function ligarAcoes(view) {
       window.showToast(err?.message || 'Não foi possível importar o extrato.', 'error', 7000);
     } finally {
       extratoFile.value = '';
+    }
+  });
+
+  const loteFile = view.querySelector('#extratos-lote-file');
+  view.querySelector('#btn-importar-lote').addEventListener('click', () => loteFile.click());
+  loteFile.addEventListener('change', async (e) => {
+    if (!e.target.files.length) return;
+    try {
+      await importarLoteArquivos(e.target.files);
+    } catch (err) {
+      console.error(err);
+      window.showToast(err?.message || 'Não foi possível importar o lote de extratos.', 'error', 8000);
+    } finally {
+      loteFile.value = '';
     }
   });
 
