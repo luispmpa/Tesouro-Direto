@@ -37,7 +37,6 @@ var CONFIG = {
   ABA_ALERTAS: 'Alertas',
   ABA_PGBL: 'PGBL',
   ABA_LOGS: 'Logs',                      // criada automaticamente
-  ABA_TAXAS: 'TaxasTD_Historico',        // criada automaticamente
 
   // Importação PGBL (e-mails da XP)
   GMAIL_BUSCA: 'from:(xpi.com.br OR xpinc.com.br) ("Data para débito mensal" OR "Valor solicitado")',
@@ -47,10 +46,7 @@ var CONFIG = {
   EMAIL_DESTINO: '',                     // vazio = e-mail do dono da planilha
   REENVIO_HORAS: 24,                     // não repete e-mail da mesma condição
 
-  // API oficial do Tesouro Direto (mesma fonte da página de rendimentos)
-  TESOURO_API: 'https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json',
-  HISTORICO_MAX_LINHAS: 20000,
-  VERSAO: '1.1.0'
+  VERSAO: '2.0.0'
 };
 
 /* ------------------------------------------------------------------- menu */
@@ -60,7 +56,6 @@ function onOpen() {
     .createMenu('📊 Painel Financeiro')
     .addItem('Importar aportes PGBL (Gmail)', 'importarAportesPGBL')
     .addItem('Verificar alertas agora', 'verificarAlertas')
-    .addItem('Atualizar taxas do Tesouro', 'atualizarTaxasTesouro')
     .addSeparator()
     .addItem('Instalar/atualizar gatilhos', 'criarTodosGatilhos')
     .addItem('Gerar token do Web App', 'gerarTokenWebApp')
@@ -271,90 +266,16 @@ function criarAcionadorAlertas() {
 }
 
 /* ===========================================================================
- * 3. TAXAS DO TESOURO DIRETO — HISTÓRICO DIÁRIO
- *    Consome a API oficial (dados de investimento E de resgate). A
- *    "Rentabilidade Anual" de RESGATE é a taxa de mercado usada pelo painel
- *    na marcação a mercado.
+ * 3. PREÇOS DO TESOURO DIRETO
+ *    O site do Tesouro Direto bloqueia o consumo da API pública, então os
+ *    preços/taxas de resgate são informados MANUALMENTE no painel (página
+ *    Tesouro Direto). O backend não consulta mais nenhuma API do Tesouro.
  * ======================================================================== */
-
-function atualizarTaxasTesouro() {
-  var resposta;
-  try {
-    resposta = UrlFetchApp.fetch(CONFIG.TESOURO_API, {
-      muteHttpExceptions: true,
-      headers: { Accept: 'application/json' }
-    });
-    if (resposta.getResponseCode() !== 200) {
-      throw new Error('HTTP ' + resposta.getResponseCode());
-    }
-  } catch (e) {
-    registrarLog('tesouro', 'erro', 'API do Tesouro indisponível: ' + e +
-      '. Mantido o último histórico válido (fallback).');
-    throw e;
-  }
-
-  var json = JSON.parse(resposta.getContentText());
-  var lista = (json.response && json.response.TrsrBdTradgList) || [];
-  if (!lista.length) {
-    registrarLog('tesouro', 'erro', 'API retornou lista vazia — histórico mantido.');
-    throw new Error('Lista de títulos vazia');
-  }
-
-  var aba = obterOuCriarAba(CONFIG.ABA_TAXAS, [
-    'Data', 'Título', 'Vencimento',
-    'Taxa investimento (% a.a.)', 'PU investimento (R$)',
-    'Taxa resgate (% a.a.)', 'PU resgate (R$)', 'Indexador'
-  ]);
-
-  var hoje = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
-
-  // Remove o snapshot de hoje, se existir (atualização idempotente por dia).
-  var valores = aba.getDataRange().getValues();
-  for (var r = valores.length - 1; r >= 1; r--) {
-    if (valores[r][0] === hoje) aba.deleteRow(r + 1);
-  }
-
-  var linhas = [];
-  lista.forEach(function (item) {
-    var bd = item.TrsrBd || {};
-    if (!bd.nm) return;
-    linhas.push([
-      hoje, bd.nm,
-      bd.mtrtyDt ? String(bd.mtrtyDt).slice(0, 10) : '',
-      numOuVazio_(bd.anulInvstmtRate), numOuVazio_(bd.untrInvstmtVal),
-      numOuVazio_(bd.anulRedRate), numOuVazio_(bd.untrRedVal),
-      (bd.FinIndxs && bd.FinIndxs.nm) || ''
-    ]);
-  });
-  if (linhas.length) {
-    aba.insertRowsAfter(1, linhas.length);
-    aba.getRange(2, 1, linhas.length, 8).setValues(linhas);
-  }
-  if (aba.getLastRow() > CONFIG.HISTORICO_MAX_LINHAS) {
-    aba.deleteRows(CONFIG.HISTORICO_MAX_LINHAS + 1, aba.getLastRow() - CONFIG.HISTORICO_MAX_LINHAS);
-  }
-
-  var msg = 'Histórico de taxas atualizado: ' + linhas.length + ' títulos em ' + hoje + '.';
-  registrarLog('tesouro', 'ok', msg);
-  return msg;
-}
-
-function numOuVazio_(v) {
-  var n = Number(v);
-  return isFinite(n) ? n : '';
-}
-
-function criarAcionadorTaxas() {
-  removerGatilhos_('atualizarTaxasTesouro');
-  ScriptApp.newTrigger('atualizarTaxasTesouro').timeBased().everyDays(1).atHour(19).create();
-  registrarLog('gatilhos', 'ok', 'Gatilho diário de taxas do Tesouro criado (19h, após o fechamento).');
-}
 
 function criarTodosGatilhos() {
   criarAcionadorImportacaoPGBL();
   criarAcionadorAlertas();
-  criarAcionadorTaxas();
-  SpreadsheetApp.getActiveSpreadsheet().toast('Gatilhos instalados: PGBL (diário 07h), alertas (a cada hora), taxas TD (diário 19h).');
+  SpreadsheetApp.getActiveSpreadsheet().toast('Gatilhos instalados: PGBL (diário 07h) e alertas (a cada hora).');
 }
 
 function removerGatilhos_(nomeFuncao) {
@@ -382,8 +303,7 @@ function doGet(e) {
     if (p.acao) {
       var acoes = {
         importarAportesPGBL: importarAportesPGBL,
-        verificarAlertas: verificarAlertas,
-        atualizarTaxasTesouro: atualizarTaxasTesouro
+        verificarAlertas: verificarAlertas
       };
       if (!acoes[p.acao]) return json_({ erro: 'Ação desconhecida: ' + p.acao });
       return json_({ ok: true, mensagem: String(acoes[p.acao]()) });
@@ -393,9 +313,6 @@ function doGet(e) {
     if (modulo === 'ping') {
       return json_({ ok: true, versao: CONFIG.VERSAO, geradoEm: new Date().toISOString() });
     }
-    // Proxy ao vivo da API do Tesouro (PU/Rentabilidade de resgate = PU atual),
-    // consumido pelo painel para a marcação a mercado sem depender de CORS.
-    if (modulo === 'tesouro') return json_(tesouroAoVivo_());
 
     var payload = { versao: CONFIG.VERSAO, geradoEm: new Date().toISOString() };
     if (modulo === 'all' || modulo === 'ibov') payload.ibov = lerIBOV_();
@@ -409,22 +326,60 @@ function doGet(e) {
   }
 }
 
+// POST: grava no Drive a configuração de alertas vinda do painel (inclusão,
+// edição, remoção). O corpo é JSON: { alertas: [{ativo,tipo,valorAlvo,base,status,obs}] }.
+function doPost(e) {
+  var p = (e && e.parameter) || {};
+  var token = PropertiesService.getScriptProperties().getProperty('API_TOKEN');
+  if (token && p.token !== token) return json_({ erro: 'Token inválido ou ausente.' });
+  try {
+    var body = {};
+    if (e && e.postData && e.postData.contents) body = JSON.parse(e.postData.contents);
+    if (p.acao === 'salvarAlertas') return json_(salvarAlertasPlanilha_(body.alertas || []));
+    return json_({ erro: 'Ação POST desconhecida: ' + p.acao });
+  } catch (err) {
+    registrarLog('webapp', 'erro', 'doPost falhou: ' + err);
+    return json_({ erro: String(err) });
+  }
+}
+
+// Reescreve a aba Alertas com as regras do painel. A coluna "Preço Atual" recebe
+// uma fórmula GOOGLEFINANCE padrão da B3, para que novos tickers também tenham
+// cotação ao vivo; "Condição" e "Última Verificação" são limpas (o robô recalcula).
+// Se você usa uma fonte de preço diferente, ajuste a fórmula abaixo.
+function salvarAlertasPlanilha_(alertas) {
+  var aba = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ABA_ALERTAS);
+  if (!aba) throw new Error('Aba "' + CONFIG.ABA_ALERTAS + '" não encontrada.');
+  alertas = Array.isArray(alertas) ? alertas : [];
+
+  var anterior = Math.max(0, aba.getLastRow() - 1);
+  var linhas = alertas.map(function (a, i) {
+    var linha = i + 2;
+    return [
+      String(a.ativo || ''), String(a.tipo || ''),
+      (a.valorAlvo == null || a.valorAlvo === '') ? '' : Number(a.valorAlvo),
+      String(a.base || ''),
+      '=IFERROR(GOOGLEFINANCE("BVMF:"&A' + linha + ');"")', // Preço Atual
+      '',                                                    // Condição (robô recalcula)
+      String(a.status || 'Ativo'),
+      '',                                                    // Última Verificação
+      String(a.obs || '')
+    ];
+  });
+  if (linhas.length) aba.getRange(2, 1, linhas.length, 9).setValues(linhas);
+  // Remove sobras quando o painel passou a ter menos alertas que a planilha.
+  if (anterior > linhas.length) {
+    aba.getRange(linhas.length + 2, 1, anterior - linhas.length, 9).clearContent();
+  }
+
+  var msg = 'Alertas do painel gravados na planilha: ' + linhas.length + ' regra(s).';
+  registrarLog('alertas', 'ok', msg);
+  return { ok: true, mensagem: msg, gravados: linhas.length };
+}
+
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-// Proxy server-side da API oficial do Tesouro (sem restrição de CORS): devolve o
-// JSON BRUTO para o painel extrair PU/Rentabilidade de resgate (o "PU atual" da
-// marcação a mercado). Não escreve em aba — apenas repassa a cotação ao vivo.
-function tesouroAoVivo_() {
-  var resp = UrlFetchApp.fetch(CONFIG.TESOURO_API, { muteHttpExceptions: true, headers: { Accept: 'application/json' } });
-  if (resp.getResponseCode() !== 200) return { erro: 'API do Tesouro HTTP ' + resp.getResponseCode() };
-  try {
-    return JSON.parse(resp.getContentText());
-  } catch (err) {
-    return { erro: 'Resposta inválida da API do Tesouro.' };
-  }
 }
 
 function gerarTokenWebApp() {

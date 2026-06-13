@@ -94,13 +94,13 @@ export function renderDashboard(view) {
       <div class="card">
         <h3 style="font-size:13px;margin-bottom:12px">Status dos robôs e fontes de dados</h3>
         <div class="status-list">
-          ${linhaFonte('API oficial do Tesouro Direto', fontes.tesouroApi.conectado, fontes.tesouroApi.atualizadoEm, 'taxas e PUs de compra/venda', '#/tesouro')}
+          ${linhaFonte('Preços do Tesouro (manuais)', fontes.tesouroApi.conectado, fontes.tesouroApi.atualizadoEm, 'PU e taxa de resgate informados por você', '#/tesouro')}
           ${linhaFonte('Planilha / Apps Script (Web App)', fontes.appsScript.conectado, fontes.appsScript.atualizadoEm, fontes.appsScript.conectado ? 'Gmail PGBL, alertas por e-mail, IBOV ao vivo' : 'configure em Dados & Integrações', '#/dados')}
           ${linhaFonte('Cotações IBOV', fontes.ibov.fonte !== 'seed', fontes.ibov.atualizadoEm, fontes.ibov.fonte === 'seed' ? 'snapshot da planilha (26/05/2026)' : 'via planilha (GOOGLEFINANCE)', '#/ibov')}
           ${cfgAno.renda > 0 || aportadoPgblAno > 0 ? linhaFonte('PGBL — meta anual', true, null, `${fmtPct(painelPgbl.pctMeta, 1)} da meta de ${fmtBRL(painelPgbl.meta)}`, '#/pgbl') : ''}
         </div>
         <p class="text-muted" style="margin-top:12px">
-          Última consulta à API do Tesouro: ${apiAtualizadaEm ? fmtDataHoraBR(new Date(apiAtualizadaEm)) : 'ainda não realizada'}.
+          Preços do Tesouro atualizados manualmente em: ${apiAtualizadaEm ? fmtDataHoraBR(new Date(apiAtualizadaEm)) : 'nunca'}.
         </p>
       </div>
     </section>`;

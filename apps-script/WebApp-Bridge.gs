@@ -27,9 +27,7 @@ var PAINEL_CONFIG = {
   ABA_ALERTAS: 'Alertas',
   ABA_PGBL: 'PGBL',
   ABA_LOGS: 'Logs',                 // opcional; se não existir, retorna vazio
-  ABA_TAXAS: 'TaxasTD_Historico',   // criada sob demanda por painel_atualizarTaxasTesouro
-  TESOURO_API: 'https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json',
-  VERSAO: '1.1.0-bridge'
+  VERSAO: '2.0.0-bridge'
 };
 
 /* ----------------------------------------------------------------- Web App */
@@ -45,9 +43,6 @@ function doGet(e) {
     if (modulo === 'ping') {
       return painel_json_({ ok: true, versao: PAINEL_CONFIG.VERSAO, geradoEm: new Date().toISOString() });
     }
-    // Proxy ao vivo da API do Tesouro (PU/Rentabilidade de resgate = PU atual),
-    // consumido pelo painel para a marcação a mercado sem depender de CORS.
-    if (modulo === 'tesouro') return painel_json_(painel_tesouroAoVivo_());
     var out = { versao: PAINEL_CONFIG.VERSAO, geradoEm: new Date().toISOString() };
     if (modulo === 'all' || modulo === 'ibov') out.ibov = painel_lerIBOV_();
     if (modulo === 'all' || modulo === 'pgbl') out.pgbl = painel_lerPGBL_();
@@ -57,6 +52,47 @@ function doGet(e) {
   } catch (err) {
     return painel_json_({ erro: String(err) });
   }
+}
+
+// POST: grava no Drive a configuração de alertas vinda do painel (inclusão,
+// edição, remoção). Corpo JSON: { alertas: [{ativo,tipo,valorAlvo,base,status,obs}] }.
+function doPost(e) {
+  var p = (e && e.parameter) || {};
+  var token = PropertiesService.getScriptProperties().getProperty('API_TOKEN');
+  if (token && p.token !== token) return painel_json_({ erro: 'Token inválido ou ausente.' });
+  try {
+    var body = {};
+    if (e && e.postData && e.postData.contents) body = JSON.parse(e.postData.contents);
+    if (p.acao === 'salvarAlertas') return painel_json_(painel_salvarAlertas_(body.alertas || []));
+    return painel_json_({ erro: 'Ação POST desconhecida: ' + p.acao });
+  } catch (err) {
+    return painel_json_({ erro: String(err) });
+  }
+}
+
+// Reescreve a aba Alertas com as regras do painel (ver nota em Code.gs sobre a
+// fórmula de preço). Não toca em nenhuma outra aba.
+function painel_salvarAlertas_(alertas) {
+  var aba = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PAINEL_CONFIG.ABA_ALERTAS);
+  if (!aba) throw new Error('Aba "' + PAINEL_CONFIG.ABA_ALERTAS + '" não encontrada.');
+  alertas = Array.isArray(alertas) ? alertas : [];
+
+  var anterior = Math.max(0, aba.getLastRow() - 1);
+  var linhas = alertas.map(function (a, i) {
+    var linha = i + 2;
+    return [
+      String(a.ativo || ''), String(a.tipo || ''),
+      (a.valorAlvo == null || a.valorAlvo === '') ? '' : Number(a.valorAlvo),
+      String(a.base || ''),
+      '=IFERROR(GOOGLEFINANCE("BVMF:"&A' + linha + ');"")',
+      '', String(a.status || 'Ativo'), '', String(a.obs || '')
+    ];
+  });
+  if (linhas.length) aba.getRange(2, 1, linhas.length, 9).setValues(linhas);
+  if (anterior > linhas.length) {
+    aba.getRange(linhas.length + 2, 1, anterior - linhas.length, 9).clearContent();
+  }
+  return { ok: true, mensagem: 'Alertas gravados: ' + linhas.length + ' regra(s).', gravados: linhas.length };
 }
 
 function painel_json_(obj) {
@@ -69,8 +105,7 @@ function painel_json_(obj) {
 function painel_executarAcao_(acao) {
   var mapa = {
     importarAportesPGBL: ['importarAportesPGBL'],
-    verificarAlertas: ['verificarAlertas', 'verificaAlertas', 'checarAlertas'],
-    atualizarTaxasTesouro: ['atualizarTaxasTesouro', 'painel_atualizarTaxasTesouro']
+    verificarAlertas: ['verificarAlertas', 'verificaAlertas', 'checarAlertas']
   };
   var candidatos = mapa[acao];
   if (!candidatos) return { erro: 'Ação desconhecida: ' + acao };
@@ -213,59 +248,6 @@ function painel_lerLogs_() {
   return dados.map(function (l) {
     return { quando: String(l[0] || ''), origem: String(l[1] || 'script'), status: String(l[2] || ''), mensagem: String(l[3] || '') };
   });
-}
-
-/* --------- PU atual ao vivo: proxy server-side da API do Tesouro ---------- */
-
-// Busca a API oficial do Tesouro pelo servidor do Google (UrlFetchApp), que não
-// sofre bloqueio de CORS, e devolve o JSON BRUTO. O painel extrai dele o PU e a
-// Rentabilidade de resgate (o "PU atual" da marcação a mercado). Não escreve em
-// nenhuma aba — é só um repassador confiável da cotação.
-function painel_tesouroAoVivo_() {
-  var resp = UrlFetchApp.fetch(PAINEL_CONFIG.TESOURO_API, { muteHttpExceptions: true, headers: { Accept: 'application/json' } });
-  if (resp.getResponseCode() !== 200) return { erro: 'API do Tesouro HTTP ' + resp.getResponseCode() };
-  try {
-    return JSON.parse(resp.getContentText());
-  } catch (err) {
-    return { erro: 'Resposta inválida da API do Tesouro.' };
-  }
-}
-
-/* ----------------- taxas do Tesouro (opcional, só se você acionar) -------- */
-
-function painel_atualizarTaxasTesouro() {
-  var resp = UrlFetchApp.fetch(PAINEL_CONFIG.TESOURO_API, { muteHttpExceptions: true, headers: { Accept: 'application/json' } });
-  if (resp.getResponseCode() !== 200) throw new Error('API do Tesouro HTTP ' + resp.getResponseCode());
-  var lista = (JSON.parse(resp.getContentText()).response || {}).TrsrBdTradgList || [];
-  if (!lista.length) throw new Error('Lista de títulos vazia');
-
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var aba = ss.getSheetByName(PAINEL_CONFIG.ABA_TAXAS);
-  if (!aba) {
-    aba = ss.insertSheet(PAINEL_CONFIG.ABA_TAXAS);
-    aba.getRange(1, 1, 1, 8).setValues([['Data', 'Título', 'Vencimento',
-      'Taxa investimento (% a.a.)', 'PU investimento (R$)',
-      'Taxa resgate (% a.a.)', 'PU resgate (R$)', 'Indexador']]).setFontWeight('bold');
-    aba.setFrozenRows(1);
-  }
-  var hoje = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
-  var vals = aba.getDataRange().getValues();
-  for (var r = vals.length - 1; r >= 1; r--) if (vals[r][0] === hoje) aba.deleteRow(r + 1);
-
-  var linhas = [];
-  lista.forEach(function (item) {
-    var bd = item.TrsrBd || {};
-    if (!bd.nm) return;
-    linhas.push([hoje, bd.nm, bd.mtrtyDt ? String(bd.mtrtyDt).slice(0, 10) : '',
-      painel_num_(bd.anulInvstmtRate), painel_num_(bd.untrInvstmtVal),
-      painel_num_(bd.anulRedRate), painel_num_(bd.untrRedVal),
-      (bd.FinIndxs && bd.FinIndxs.nm) || '']);
-  });
-  if (linhas.length) {
-    aba.insertRowsAfter(1, linhas.length);
-    aba.getRange(2, 1, linhas.length, 8).setValues(linhas);
-  }
-  return 'Histórico de taxas atualizado: ' + linhas.length + ' títulos em ' + hoje + '.';
 }
 
 /* -------------------------------------------------------------- utilitários */

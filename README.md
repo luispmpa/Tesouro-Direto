@@ -16,21 +16,26 @@ web profissional, organizado por módulos.
 | Rota | Módulo | O que faz |
 |---|---|---|
 | `#/` | **Dashboard** | patrimônio, investido, bruto/líquido a mercado, rentabilidade, distribuição (tipo/indexador/vencimento), alertas ativos e status dos robôs |
-| `#/tesouro` | **Tesouro Direto** | carteira completa com **marcação a mercado** (PU e taxa de **resgate** oficiais), IR regressivo, taxa B3, Δ taxa contratada × atual, simulador *vender hoje × manter até o vencimento*, CRUD de aportes, atualização individual ou em lote por Extratos Analíticos Excel sem duplicatas, importação da planilha de resgate, backups |
+| `#/tesouro` | **Tesouro Direto** | carteira completa com **marcação a mercado** (PU e taxa de **resgate** informados **manualmente**), IR regressivo, taxa B3, Δ taxa contratada × atual, simulador *vender hoje × manter até o vencimento*, CRUD de aportes, atualização individual ou em lote por Extratos Analíticos Excel sem duplicatas, importação da planilha de resgate, backups |
 | `#/ibov` | **IBOV / Ações** | carteira teórica do índice com variações (dia/semana/mês/6m/12m), busca, ordenação e top altas/baixas — ao vivo via planilha (GOOGLEFINANCE) quando conectado |
 | `#/pgbl` | **Previdência PGBL** | limite de 12%, meta anual, economia de IR, matriz de aportes mensais (importados do **Gmail** pelo Apps Script), projeções |
-| `#/alertas` | **Alertas** | as 34 regras migradas da planilha + alertas de taxa do Tesouro, vencimento, meta PGBL e saúde dos dados; histórico de disparos; e-mail continua no Apps Script |
+| `#/alertas` | **Alertas** | as regras de preço migradas da planilha + alertas automáticos de vencimento, meta PGBL e saúde dos dados; inclusão/edição/remoção **refletidas na planilha do Drive**; histórico de disparos; e-mail continua no Apps Script |
 | `#/dados` | **Dados & Integrações** | status das fontes, conexão com o Web App (URL+token só no seu navegador), premissas de cálculo, logs locais e da planilha, backup completo |
+
+> ℹ️ **Preços do Tesouro são manuais.** O site do Tesouro Direto bloqueia o
+> consumo automático da API, então o PU e a taxa de **resgate** são informados
+> por você (digitados ou importados da planilha de resgate) em *Tesouro Direto ›
+> Atualizar preços*. O painel não faz nenhuma chamada à API do Tesouro.
 
 ## Arquitetura (resumo)
 
 - **GitHub Pages**: SPA estática em HTML/CSS/JS puro (ES Modules, sem build),
   gráficos com Chart.js, dados do usuário em `localStorage`.
-- **API oficial do Tesouro Direto**: preços/taxas de investimento e **resgate**
-  — a *Rentabilidade Anual de resgate* parametriza a marcação a mercado.
-- **Apps Script (backend seguro)**: Gmail → PGBL, alertas por e-mail,
-  GOOGLEFINANCE, gatilhos e histórico de taxas; exposto ao painel por Web App
-  com token. **Nenhuma credencial ou dado fiscal no repositório.**
+- **Preços do Tesouro (manuais)**: PU e *Rentabilidade Anual de resgate*
+  informados pelo usuário parametrizam a marcação a mercado — sem rede.
+- **Apps Script (backend seguro)**: Gmail → PGBL, alertas por e-mail (com
+  inclusão/edição/remoção gravadas na aba *Alertas*), GOOGLEFINANCE e gatilhos;
+  exposto ao painel por Web App com token. **Nenhuma credencial ou dado fiscal no repositório.**
 
 Detalhes: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 

@@ -82,6 +82,47 @@ export async function executarAcao(acao) {
   return data;
 }
 
+// Escreve a configuração de alertas na aba "Alertas" da planilha do Drive, para
+// que o robô de e-mail (verificarAlertas) reflita as inclusões/edições/remoções
+// feitas no painel. POST com corpo de texto simples (sem cabeçalho custom) para
+// evitar preflight de CORS; o token vai na query string. Melhor esforço: o
+// chamador trata a falha sem reverter a alteração local.
+export async function enviarAlertas(alertas) {
+  const cfg = obterConfig();
+  if (!cfg.url) throw new Error('Endpoint do Apps Script não configurado.');
+  const sep = cfg.url.includes('?') ? '&' : '?';
+  const url = `${cfg.url}${sep}acao=salvarAlertas` +
+    (cfg.token ? `&token=${encodeURIComponent(cfg.token)}` : '');
+
+  // Envia só os campos que a planilha entende (alertas de preço/ação).
+  const payload = (Array.isArray(alertas) ? alertas : [])
+    .filter((a) => (a.categoria || 'acao') === 'acao')
+    .map((a) => ({
+      ativo: a.ativo, tipo: a.tipo, valorAlvo: a.valorAlvo,
+      base: a.base || '', status: a.status || 'Ativo', obs: a.obs || '',
+    }));
+
+  let resp;
+  try {
+    resp = await fetch(url, { method: 'POST', body: JSON.stringify({ alertas: payload }), redirect: 'follow' });
+  } catch (err) {
+    logErro('sheets-bridge', `Falha ao gravar alertas na planilha: ${err.message}`);
+    throw new Error('Não foi possível gravar os alertas na planilha.');
+  }
+  if (!resp.ok) {
+    logErro('sheets-bridge', `Gravação de alertas respondeu HTTP ${resp.status}`);
+    throw new Error(`Endpoint respondeu HTTP ${resp.status}.`);
+  }
+  let data = {};
+  try { data = await resp.json(); } catch { /* resposta sem JSON é tolerada */ }
+  if (data && data.erro) {
+    logErro('sheets-bridge', `Apps Script recusou os alertas: ${data.erro}`);
+    throw new Error(data.erro);
+  }
+  logOk('sheets-bridge', `Alertas gravados na planilha (${payload.length} regra(s)).`);
+  return data;
+}
+
 // Teste de diagnóstico usado na página Dados & Integrações.
 export async function diagnosticar() {
   const inicio = performance.now();

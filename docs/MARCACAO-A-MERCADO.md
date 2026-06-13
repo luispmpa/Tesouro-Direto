@@ -5,29 +5,25 @@ mercado dos títulos do Tesouro Direto, quais dados oficiais são usados e quais
 aproximações são feitas quando não há dado exato (exigência do escopo: indicar
 claramente a metodologia).
 
-## 1. Fonte oficial dos dados
+## 1. Origem dos dados (atualização manual)
 
-Endpoint público que alimenta a página
-[Rendimento dos títulos](https://www.tesourodireto.com.br/produtos/dados-sobre-titulos/rendimento-dos-titulos):
+O site do Tesouro Direto **bloqueia** o consumo automático da API pública
+(`treasurybondsinfo.json`), então o painel **não faz nenhuma chamada online**.
+Os dados de mercado de cada título são informados **manualmente** pelo usuário em
+*Tesouro Direto › Atualizar preços*, de duas formas:
 
-```
-https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/service/api/treasurybondsinfo.json
-```
+- **digitando** o PU de resgate e, opcionalmente, a taxa de resgate atual; ou
+- **importando** a planilha de resgate do site do Tesouro (.xlsx/.xls/.csv),
+  que preenche os campos para conferência.
 
-De cada título são extraídos **os dois lados**:
-
-| Campo da API | Significado | Uso no painel |
+| Dado manual | Significado | Uso no painel |
 |---|---|---|
-| `anulInvstmtRate` | Rentabilidade anual de **investimento** (compra) | referência/histórico |
-| `untrInvstmtVal` | PU de **investimento** | referência |
-| `anulRedRate` | **Rentabilidade anual de RESGATE** | **taxa atual de mercado** — parametriza a marcação a mercado e os alertas de taxa |
-| `untrRedVal` | **PU de RESGATE** (venda antecipada) | **preço atual** de cada posição |
-| `mtrtyDt` | data de vencimento | prazos, IR projetado, gráficos |
+| **PU de resgate** | preço unitário de venda antecipada | **preço atual** de cada posição |
+| **Taxa de resgate** (opcional) | Rentabilidade Anual de resgate | **taxa atual de mercado** — Δ contra a taxa contratada |
+| data de vencimento | derivada do nome do título (convenções do TD) | prazos, IR projetado, gráficos |
 
-Resiliência: chamada direta → 2 proxies de CORS → **último retorno válido em
-cache** (com idade exibida na interface). Cada consulta bem-sucedida grava uma
-amostra no **histórico diário de taxas** (local + aba `TaxasTD_Historico` via
-Apps Script).
+Os dados ficam guardados no `localStorage` do navegador. Cada atualização manual
+grava uma amostra no **histórico diário de taxas** (gráfico de evolução).
 
 ## 2. Valor bruto (marcação a mercado exata)
 
@@ -36,13 +32,12 @@ valor_bruto = PU_resgate × quantidade
 ```
 
 O PU de resgate **já é** o valor que o Tesouro pagaria na venda hoje — ele
-embute a precificação pela taxa de resgate corrente. Por isso, quando a API
-responde, a marcação é exata (não é estimativa).
+embute a precificação pela taxa de resgate corrente. Por isso, com o PU
+informado, a marcação reflete o valor real de venda (não é estimativa).
 
 Prioridade do preço por posição (badge na tabela indica a origem):
 1. **manual** — PU digitado pelo usuário ou importado da planilha de resgate (.xlsx/.csv);
-2. **api** — `untrRedVal` oficial;
-3. **compra** — fallback no preço de aquisição (título fora de negociação e sem dado manual), claramente sinalizado.
+2. **compra** — fallback no preço de aquisição (título sem dado de mercado informado), claramente sinalizado.
 
 ## 3. Valor líquido estimado
 

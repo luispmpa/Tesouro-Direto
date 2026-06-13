@@ -7,7 +7,6 @@ import { renderPgbl } from './pages/pgbl.js';
 import { renderAlertas } from './pages/alertas.js';
 import { renderDados } from './pages/dados.js';
 import { obterPrefs, salvarPrefs, statusFontes } from './services/dataStore.js';
-import { atualizarTesouro, obterCache } from './services/tesouroApi.js';
 import { sincronizar, configurado } from './services/sheetsBridge.js';
 import { avaliarTudo, registrarDisparos } from './services/alertEngine.js';
 import { tempoRelativo } from './utils/format.js';
@@ -107,32 +106,29 @@ function atualizarBadgeAlertas() {
   }
 }
 
+// Sincroniza com a planilha do Drive (IBOV, PGBL, alertas e logs via Apps Script).
+// Os preços do Tesouro são manuais (Tesouro Direto › Atualizar mercado).
 async function atualizarTudo() {
   const btn = document.getElementById('btn-global-refresh');
-  btn.disabled = true;
-  let okApi = false;
-  let okBridge = false;
 
-  try {
-    await atualizarTesouro();
-    okApi = true;
-  } catch { /* erro já logado; cache anterior permanece válido */ }
-
-  if (configurado()) {
-    try {
-      await sincronizar('all');
-      okBridge = true;
-    } catch { /* erro já logado */ }
+  if (!configurado()) {
+    showToast('Conecte a planilha do Drive em Dados & Integrações para sincronizar. Os preços do Tesouro são atualizados manualmente em Tesouro Direto.', 'info', 6000);
+    return;
   }
+
+  btn.disabled = true;
+  let okBridge = false;
+  try {
+    await sincronizar('all');
+    okBridge = true;
+  } catch { /* erro já logado */ }
 
   btn.disabled = false;
   atualizarBadgeAlertas();
   navegar();
 
-  if (okApi && okBridge) showToast('Tesouro Direto e planilha sincronizados.', 'success');
-  else if (okApi) showToast('Taxas do Tesouro atualizadas.' + (configurado() ? ' Falha ao sincronizar a planilha.' : ''), configurado() ? 'info' : 'success');
-  else if (okBridge) showToast('Planilha sincronizada. API do Tesouro indisponível (usando último dado válido).', 'info');
-  else showToast('Não foi possível atualizar agora. Exibindo últimos dados válidos.', 'error');
+  if (okBridge) showToast('Planilha do Drive sincronizada.', 'success');
+  else showToast('Não foi possível sincronizar a planilha agora. Exibindo últimos dados válidos.', 'error');
 }
 
 // ------------------------------------------------------------------ init ---
@@ -167,13 +163,8 @@ function init() {
   navegar();
   atualizarBadgeAlertas();
 
-  // Primeira carga: busca silenciosa das taxas se o cache estiver frio (>6h).
-  const cache = obterCache();
-  if (!cache || Date.now() - cache.fetchedAt > 6 * 3600 * 1000) {
-    atualizarTesouro()
-      .then(() => { atualizarBadgeAlertas(); navegar(); })
-      .catch(() => { /* mantém fallback */ });
-  }
+  // Primeira carga: sincroniza a planilha do Drive em segundo plano, se conectada.
+  // Os preços do Tesouro são manuais e ficam guardados localmente — sem rede.
   if (configurado()) {
     sincronizar('all').then(() => { atualizarBadgeAlertas(); navegar(); }).catch(() => { /* mantém cache */ });
   }
